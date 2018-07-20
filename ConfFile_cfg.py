@@ -17,21 +17,62 @@ process.options.allowUnscheduled = cms.untracked.bool(True)
 
 #############
 
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(10))
-process.MessageLogger.cerr.FwkReport.reportEvery = 10000
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(-1))
+process.MessageLogger.cerr.FwkReport.reportEvery = 10
 
 process.source = cms.Source("PoolSource",# fileNames = cms.untracked.vstring())
     # replace 'myfile.root' with the source file you want to use
     fileNames = cms.untracked.vstring(
         #'file:/uscms/home/ksiehl/nobackup/CMSSW_8_0_8_patch3/src/output/miniAOD-prod_PAT.root'
-	#'root://cms-xrd-global.cern.ch//store/mc/RunIISummer16MiniAODv2/WJetsToLNu_HT-800To1200_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/50000/ECBB1C69-57D8-E611-ADA8-0025904A9430.root'
-        #'root://cms-xrd-global.cern.ch//store/mc/RunIISummer16MiniAODv2/WJetsToLNu_HT-2500ToInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/50000/D0D0C3B9-C0C4-E611-9CEE-0023AEEEB559.root'#,
-        #'root://cms-xrd-global.cern.ch//store/mc/RunIISummer16MiniAODv2/WJetsToLNu_HT-2500ToInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/50000/8CC312BC-C0C4-E611-BB61-BC305B390AB4.root',
-        #'root://cms-xrd-global.cern.ch//store/mc/RunIISummer16MiniAODv2/WJetsToLNu_HT-2500ToInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/50000/461F0E7B-D2C4-E611-B465-BC305B390AB4.root',
-        #'root://cms-xrd-global.cern.ch//store/mc/RunIISummer16MiniAODv2/WJetsToLNu_HT-2500ToInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/50000/36F3E28A-C0C4-E611-834A-0023AEEEB799.root',
-        #'root://cms-xrd-global.cern.ch//store/mc/RunIISummer16MiniAODv2/WJetsToLNu_HT-2500ToInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/50000/1C1FD740-C8C4-E611-A2D9-009C02AAB554.root',
-        #'root://cms-xrd-global.cern.ch//store/mc/RunIISummer16MiniAODv2/WJetsToLNu_HT-2500ToInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/50000/1476F163-D2C4-E611-9307-008CFAF558EE.root',
-        #'root://cms-xrd-global.cern.ch//store/mc/RunIISummer16MiniAODv2/WJetsToLNu_HT-2500ToInf_TuneCUETP8M1_13TeV-madgraphMLM-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/50000/062203BC-C0C4-E611-A14A-BC305B390AB4.root'
+	'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_1.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_2.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_3.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_4.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_5.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_6.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_7.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_8.root',
+        #'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_9.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_10.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_11.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_12.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_13.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_14.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_15.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_16.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_17.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_18.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_19.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_20.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_21.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_22.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_23.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_24.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_25.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_26.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_27.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_28.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_29.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_30.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_31.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_32.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_33.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_34.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_35.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_36.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_37.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_38.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_39.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_40.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_41.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_42.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_43.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_44.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_45.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_46.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_47.root',
+        'root://cms-xrd-global.cern.ch//store/user/ksiehl/multiweight_rereretry/multiweights-nextstep/180515_234552/0000/miniAOD-prod_PAT_48.root'
+       	#'root://cms-xrd-global.cern.ch//store/mc/RunIISummer16MiniAODv2/WWToLNuQQ_MWW-800_PtW-180_aTGC_ShowerReconfig_13TeV-amcatnloFXFX-madspin-pythia8/MINIAODSIM/PUMoriond17_80X_mcRun2_asymptotic_2016_TrancheIV_v6-v1/80000/FCB4520F-B1EE-E611-9678-1CC1DE782F02.root'
     )
 )
 
@@ -161,6 +202,7 @@ process.demo = cms.EDAnalyzer('ntuplizer',
 )
 
 process.TFileService = cms.Service("TFileService",
+	fileName = cms.string("ntuple_output.root"),
 	#fileName = cms.string("signal_t.root"),
         #fileName = cms.string("background_t.root"),
         #fileName = cms.string("signal_WW600to800.root"),
@@ -171,7 +213,7 @@ process.TFileService = cms.Service("TFileService",
         #fileName = cms.string("background_Wjet200to400.root"),
         #fileName = cms.string("background_Wjet400to600.root"),
         #fileName = cms.string("background_Wjet600to800.root"),
-        fileName = cms.string("background_Wjet800to1200.root"),
+        #fileName = cms.string("background_Wjet800to1200.root"),
         #fileName = cms.string("background_Wjet1200to2500.root"),
         #fileName = cms.string("background_Wjet2500toinf.root"),
         #fileName = cms.string("background_WW.root"),
