@@ -16,7 +16,8 @@
 //
 //
 
-//#define MULTI_WEIGHTS 
+//#define MULTI_WEIGHTS
+#define NEW_WEIGHTS
 // system include files
 #include <memory>
 #include <iostream>
@@ -71,9 +72,12 @@
 //#include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
 // LHE weights
-//#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
-//#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
-//#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/replace.hpp>
+//#include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 
 // Utilities
 #include "DataFormats/Math/interface/deltaR.h"
@@ -101,6 +105,7 @@
 
 //and something else
 #include "Analysis/ntuplizer/metZcalc/METzCalculator.cc"
+#include "Analysis/ntuplizer/metZcalc/METxyCorrector.cc"
 //and for n-subjettiness
 //#include "/uscms_data/d3/ksiehl/CMSSW_8_0_26/src/Analysis/ntuplizer/jet_tools/JetTools.cc"
 //#include "RecoJets/JetProducers/interface/NjettinessAdder.h"
@@ -117,9 +122,26 @@ struct particle
   Double_t Theta;
   Double_t Phi;
   Double_t Y;
+
+  void setvalue(TLorentzVector source_vector);
 };
 
+void particle::setvalue(TLorentzVector source_vector)
+{
+  Px = source_vector.Px();
+  Py = source_vector.Py();
+  Pz = source_vector.Pz();
+  E = source_vector.E();
+  M = source_vector.M();
+  Pt = source_vector.Pt();
+  Eta = source_vector.Eta();
+  Theta = source_vector.Theta();
+  Phi = source_vector.Phi();
+  Y = source_vector.Rapidity();
+}
 
+//std::ofstream anglefile;
+//anglefile.open("angle_output.txt");
 
 
 Double_t d_costheta1 = 0.0;
@@ -129,69 +151,184 @@ Double_t d_costhetastar = 0.0;
 Double_t d_phi1 = 0.0;
 Double_t d_phi2 = 0.0;
 
-
+/*/INTERMEDIATE STEPS VARIABLES
 Double_t d_leptons_in_lep_px = 0.0;
 Double_t d_leptons_in_lep_py = 0.0;
 Double_t d_leptons_in_lep_pz = 0.0;
+
 Double_t d_partons_in_lep_px = 0.0;
 Double_t d_partons_in_lep_py = 0.0;
 Double_t d_partons_in_lep_pz = 0.0;
+
 Double_t d_parton1_in_lep_px = 0.0;
-Double_t d_parton2_in_lep_px = 0.0;
 Double_t d_parton1_in_lep_py = 0.0;
-Double_t d_parton2_in_lep_py = 0.0;
 Double_t d_parton1_in_lep_pz = 0.0;
+
+Double_t d_parton2_in_lep_px = 0.0;
+Double_t d_parton2_in_lep_py = 0.0;
 Double_t d_parton2_in_lep_pz = 0.0;
+
 Double_t d_lepton1_in_lep_px = 0.0;
 Double_t d_lepton1_in_lep_py = 0.0;
 Double_t d_lepton1_in_lep_pz = 0.0;
+
 Double_t d_lepton1_dotted_x = 0.0;
 Double_t d_lepton1_dotted_y = 0.0;
 Double_t d_lepton1_dotted_z = 0.0;
+
 Double_t d_leptons_in_had_px = 0.0;
 Double_t d_leptons_in_had_py = 0.0;
 Double_t d_leptons_in_had_pz = 0.0;
+
 Double_t d_lepton1_in_had_px = 0.0;
 Double_t d_lepton1_in_had_py = 0.0;
 Double_t d_lepton1_in_had_pz = 0.0;
+
 Double_t d_lepton2_in_had_px = 0.0;
 Double_t d_lepton2_in_had_py = 0.0;
 Double_t d_lepton2_in_had_pz = 0.0;
+
 Double_t d_parton1_in_had_px = 0.0;
 Double_t d_parton1_in_had_py = 0.0;
 Double_t d_parton1_in_had_pz = 0.0;
+
 Double_t d_parton1_dotted_x = 0.0;
 Double_t d_parton1_dotted_y = 0.0;
 Double_t d_parton1_dotted_z = 0.0;
+
 Double_t d_complicated1_px = 0.0;
 Double_t d_complicated1_py = 0.0;
 Double_t d_complicated1_pz = 0.0;
+
 Double_t d_complicated2_px = 0.0;
 Double_t d_complicated2_py = 0.0;
 Double_t d_complicated2_pz = 0.0;
+
 Double_t d_lepton1WWframe_X = 0.0;
 Double_t d_lepton1WWframe_Y = 0.0;
 Double_t d_lepton1WWframe_Z = 0.0;
+
 Double_t d_lepton_sumWWframe_X = 0.0;
 Double_t d_lepton_sumWWframe_Y = 0.0;
 Double_t d_lepton_sumWWframe_Z = 0.0;
+
 Double_t d_parton1WWframe_X = 0.0;
 Double_t d_parton1WWframe_Y = 0.0;
 Double_t d_parton1WWframe_Z = 0.0;
+
 Double_t d_parton_sumWWframe_X = 0.0;
 Double_t d_parton_sumWWframe_Y = 0.0;
 Double_t d_parton_sumWWframe_Z = 0.0;
+
 Double_t d_boostWWframe_X = 0.0;
 Double_t d_boostWWframe_Y = 0.0;
 Double_t d_boostWWframe_Z = 0.0;
+
 Double_t d_boostWlep_X = 0.0;
 Double_t d_boostWlep_Y = 0.0;
 Double_t d_boostWlep_Z = 0.0;
+
 Double_t d_boostWhad_X = 0.0;
 Double_t d_boostWhad_Y = 0.0;
 Double_t d_boostWhad_Z = 0.0;
 
+Double_t d_xdotx = 0.0;
+Double_t d_xdoty = 0.0;
+Double_t d_xdotz = 0.0;
 
+Double_t d_ydotx = 0.0;
+Double_t d_ydoty = 0.0;
+Double_t d_ydotz = 0.0;
+
+Double_t d_zdotx = 0.0;
+Double_t d_zdoty = 0.0;
+Double_t d_zdotz = 0.0;
+
+Double_t d_lepton1WWframe_UX = 0.0; Double_t d_lepton1WWframe_UY = 0.0; Double_t d_lepton1WWframe_UZ = 0.0; Double_t d_lepton_sumWWframe_UX = 0.0; Double_t d_lepton_sumWWframe_UY = 0.0; Double_t d_lepton_sumWWframe_UZ = 0.0;
+
+//////////////////////////////////////////////////////////////////
+
+Int_t d_leptons_in_lep_px_good = 1;
+Int_t d_leptons_in_lep_py_good = 1;
+Int_t d_leptons_in_lep_pz_good = 1;
+
+Int_t d_partons_in_lep_px_good = 1;
+Int_t d_partons_in_lep_py_good = 1;
+Int_t d_partons_in_lep_pz_good = 1;
+
+Int_t d_parton1_in_lep_px_good = 1;
+Int_t d_parton1_in_lep_py_good = 1;
+Int_t d_parton1_in_lep_pz_good = 1;
+
+Int_t d_parton2_in_lep_px_good = 1;
+Int_t d_parton2_in_lep_py_good = 1;
+Int_t d_parton2_in_lep_pz_good = 1;
+
+Int_t d_lepton1_in_lep_px_good = 1;
+Int_t d_lepton1_in_lep_py_good = 1;
+Int_t d_lepton1_in_lep_pz_good = 1;
+
+//Int_t d_lepton1_dotted_x_good = 1;
+//Int_t d_lepton1_dotted_y_good = 1;
+//Int_t d_lepton1_dotted_z_good = 1;
+
+Int_t d_leptons_in_had_px_good = 1;
+Int_t d_leptons_in_had_py_good = 1;
+Int_t d_leptons_in_had_pz_good = 1;
+
+Int_t d_lepton1_in_had_px_good = 1;
+Int_t d_lepton1_in_had_py_good = 1;
+Int_t d_lepton1_in_had_pz_good = 1;
+
+Int_t d_lepton2_in_had_px_good = 1;
+Int_t d_lepton2_in_had_py_good = 1;
+Int_t d_lepton2_in_had_pz_good = 1;
+
+Int_t d_parton1_in_had_px_good = 1;
+Int_t d_parton1_in_had_py_good = 1;
+Int_t d_parton1_in_had_pz_good = 1;
+
+//Int_t d_parton1_dotted_x_good = 1;
+//Int_t d_parton1_dotted_y_good = 1;
+//Int_t d_parton1_dotted_z_good = 1;
+
+//Int_t d_complicated1_px_good = 1;
+//Int_t d_complicated1_py_good = 1;
+//Int_t d_complicated1_pz_good = 1;
+
+//Int_t d_complicated2_px_good = 1;
+//Int_t d_complicated2_py_good = 1;
+//Int_t d_complicated2_pz_good = 1;
+
+Int_t d_lepton1WWframe_X_good = 1;
+Int_t d_lepton1WWframe_Y_good = 1;
+Int_t d_lepton1WWframe_Z_good = 1;
+
+Int_t d_lepton_sumWWframe_X_good = 1;
+Int_t d_lepton_sumWWframe_Y_good = 1;
+Int_t d_lepton_sumWWframe_Z_good = 1;
+
+Int_t d_parton1WWframe_X_good = 1;
+Int_t d_parton1WWframe_Y_good = 1;
+Int_t d_parton1WWframe_Z_good = 1;
+
+Int_t d_parton_sumWWframe_X_good = 1;
+Int_t d_parton_sumWWframe_Y_good = 1;
+Int_t d_parton_sumWWframe_Z_good = 1;
+
+//Int_t d_boostWWframe_X_good = 1;
+//Int_t d_boostWWframe_Y_good = 1;
+//Int_t d_boostWWframe_Z_good = 1;
+
+//Int_t d_boostWlep_X_good = 1;
+//Int_t d_boostWlep_Y_good = 1;
+//Int_t d_boostWlep_Z_good = 1;
+
+//Int_t d_boostWhad_X_good = 1;
+//Int_t d_boostWhad_Y_good = 1;
+//Int_t d_boostWhad_Z_good = 1;
+
+//*/
 int extra_muon_count = 0;
 int extra_electron_count = 0;
 int no_lepton_found_count = 0;
@@ -213,17 +350,22 @@ int merged_counter = 0;
 int merged_event_count = 0;
 
 bool talking = false;
+bool bad_angle = false;
 
 const Double_t Wmass = 80.4; //other file has a 4bodymass function here, as well as namespace lhapdf functions
 const Double_t Zmass = 90.2;
+
+const Double_t W_unc_sqrd = 16.0;
+const Double_t met_unc_sqrd = 750.0;
 
 const Double_t el_mass = 0.00051099891;
 const Double_t mu_mass = 0.105658367;
 
 void calculateAngles(TLorentzVector thep4M11, TLorentzVector thep4M12, TLorentzVector thep4M21, TLorentzVector thep4M22, Double_t& costheta1, Double_t& costheta2, Double_t& phi, Double_t& costhetastar, Double_t& phi1, Double_t& phi2);
 
-void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentzVector parton1, TLorentzVector parton2, Double_t& leptons_in_lep_px, Double_t& leptons_in_lep_py, Double_t& leptons_in_lep_pz, Double_t& partons_in_lep_px, Double_t& partons_in_lep_py, Double_t& partons_in_lep_pz, Double_t& parton1_in_lep_px, Double_t& parton2_in_lep_px, Double_t& parton1_in_lep_py, Double_t& parton2_in_lep_py, Double_t& parton1_in_lep_pz, Double_t& parton2_in_lep_pz, Double_t& lepton1_in_lep_px, Double_t& lepton1_in_lep_py, Double_t& lepton1_in_lep_pz, Double_t& lepton1_dotted_x, Double_t& lepton1_dotted_y, Double_t& lepton1_dotted_z, Double_t& leptons_in_had_px, Double_t& leptons_in_had_py, Double_t& leptons_in_had_pz, Double_t& lepton1_in_had_px, Double_t& lepton1_in_had_py, Double_t& lepton1_in_had_pz, Double_t& lepton2_in_had_px, Double_t& lepton2_in_had_py, Double_t& lepton2_in_had_pz, Double_t& parton1_in_had_px, Double_t& parton1_in_had_py, Double_t& parton1_in_had_pz, Double_t& parton1_dotted_x, Double_t& parton1_dotted_y, Double_t& parton1_dotted_z, Double_t& complicated1_px, Double_t& complicated1_py, Double_t& complicated1_pz, Double_t& complicated2_px, Double_t& complicated2_py, Double_t& complicated2_pz, Double_t& lepton_sumWWframe_X, Double_t& lepton_sumWWframe_Y, Double_t& lepton_sumWWframe_Z, Double_t& lepton1WWframe_X, Double_t& lepton1WWframe_Y, Double_t& lepton1WWframe_Z, Double_t& parton_sumWWframe_X, Double_t& parton_sumWWframe_Y, Double_t& parton_sumWWframe_Z, Double_t& parton1WWframe_X, Double_t& parton1WWframe_Y, Double_t& parton1WWframe_Z, Double_t& costhetastar, Double_t& costheta1, Double_t& phi, Double_t& costheta2, Double_t& phi1, Double_t& phi2, Double_t& boostWWframe_X, Double_t& boostWWframe_Y, Double_t& boostWWframe_Z, Double_t& boostWlep_X, Double_t& boostWlep_Y, Double_t& boostWlep_Z, Double_t& boostWhad_X, Double_t& boostWhad_Y, Double_t& boostWhad_Z);
-
+/*/INTERMEDIATE STEPS
+void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentzVector parton1, TLorentzVector parton2, Int_t neu_status, Double_t& leptons_in_lep_px, Double_t& leptons_in_lep_py, Double_t& leptons_in_lep_pz, Double_t& partons_in_lep_px, Double_t& partons_in_lep_py, Double_t& partons_in_lep_pz, Double_t& parton1_in_lep_px, Double_t& parton2_in_lep_px, Double_t& parton1_in_lep_py, Double_t& parton2_in_lep_py, Double_t& parton1_in_lep_pz, Double_t& parton2_in_lep_pz, Double_t& lepton1_in_lep_px, Double_t& lepton1_in_lep_py, Double_t& lepton1_in_lep_pz, Double_t& lepton1_dotted_x, Double_t& lepton1_dotted_y, Double_t& lepton1_dotted_z, Double_t& leptons_in_had_px, Double_t& leptons_in_had_py, Double_t& leptons_in_had_pz, Double_t& lepton1_in_had_px, Double_t& lepton1_in_had_py, Double_t& lepton1_in_had_pz, Double_t& lepton2_in_had_px, Double_t& lepton2_in_had_py, Double_t& lepton2_in_had_pz, Double_t& parton1_in_had_px, Double_t& parton1_in_had_py, Double_t& parton1_in_had_pz, Double_t& parton1_dotted_x, Double_t& parton1_dotted_y, Double_t& parton1_dotted_z, Double_t& complicated1_px, Double_t& complicated1_py, Double_t& complicated1_pz, Double_t& complicated2_px, Double_t& complicated2_py, Double_t& complicated2_pz, Double_t& lepton_sumWWframe_X, Double_t& lepton_sumWWframe_Y, Double_t& lepton_sumWWframe_Z, Double_t& lepton1WWframe_X, Double_t& lepton1WWframe_Y, Double_t& lepton1WWframe_Z, Double_t& parton_sumWWframe_X, Double_t& parton_sumWWframe_Y, Double_t& parton_sumWWframe_Z, Double_t& parton1WWframe_X, Double_t& parton1WWframe_Y, Double_t& parton1WWframe_Z, Double_t& costhetastar, Double_t& costheta1, Double_t& phi, Double_t& costheta2, Double_t& phi1, Double_t& phi2, Double_t& boostWWframe_X, Double_t& boostWWframe_Y, Double_t& boostWWframe_Z, Double_t& boostWlep_X, Double_t& boostWlep_Y, Double_t& boostWlep_Z, Double_t& boostWhad_X, Double_t& boostWhad_Y, Double_t& boostWhad_Z, Double_t& xdotx, Double_t& xdoty, Double_t& xdotz, Double_t& ydotx, Double_t& ydoty, Double_t& ydotz, Double_t& zdotx, Double_t& zdoty, Double_t& zdotz, Double_t& lepton1WWframe_UX, Double_t& lepton1WWframe_UY, Double_t& lepton1WWframe_UZ, Double_t& lepton_sumWWframe_UX, Double_t& lepton_sumWWframe_UY, Double_t& lepton_sumWWframe_UZ, Int_t& leptons_in_lep_px_good, Int_t& leptons_in_lep_py_good, Int_t& leptons_in_lep_pz_good, Int_t& partons_in_lep_px_good, Int_t& partons_in_lep_py_good, Int_t& partons_in_lep_pz_good, Int_t& parton1_in_lep_px_good, Int_t& parton2_in_lep_px_good, Int_t& parton1_in_lep_py_good, Int_t& parton2_in_lep_py_good, Int_t& parton1_in_lep_pz_good, Int_t& parton2_in_lep_pz_good, Int_t& lepton1_in_lep_px_good, Int_t& lepton1_in_lep_py_good, Int_t& lepton1_in_lep_pz_good, Int_t& leptons_in_had_px_good, Int_t& leptons_in_had_py_good, Int_t& leptons_in_had_pz_good, Int_t& lepton1_in_had_px_good, Int_t& lepton1_in_had_py_good, Int_t& lepton1_in_had_pz_good, Int_t& lepton2_in_had_px_good, Int_t& lepton2_in_had_py_good, Int_t& lepton2_in_had_pz_good, Int_t& parton1_in_had_px_good, Int_t& parton1_in_had_py_good, Int_t& parton1_in_had_pz_good, Int_t& lepton_sumWWframe_X_good, Int_t& lepton_sumWWframe_Y_good, Int_t& lepton_sumWWframe_Z_good, Int_t& lepton1WWframe_X_good, Int_t& lepton1WWframe_Y_good, Int_t& lepton1WWframe_Z_good, Int_t& parton_sumWWframe_X_good, Int_t& parton_sumWWframe_Y_good, Int_t& parton_sumWWframe_Z_good, Int_t& parton1WWframe_X_good, Int_t& parton1WWframe_Y_good, Int_t& parton1WWframe_Z_good);
+//*/
 double jetCharge(const reco::PFJet &jet, const double kappa)
 {
   double charge = 0;
@@ -337,12 +479,12 @@ private:
   TH1D *ww_mass, *ww_pt, *ww_rap;
   
 
-  TH1D *wp_pt, *wm_pt, *whad_pt, *wlep_pt, *neu_pt, *elr_pt, *mur_pt, *elg_pt, *mug_pt, *met_pt;
-  TH1D *wp_rap, *wm_rap, *whad_rap, *wlep_rap, *neu_rap, *elr_rap, *mur_rap, *elg_rap, *mug_rap, *met_rap;
+  TH1D *wp_pt, *wm_pt, *vhad_pt, *wlep_pt, *neu_pt, *elr_pt, *mur_pt, *elg_pt, *mug_pt, *met_pt;
+  TH1D *wp_rap, *wm_rap, *vhad_rap, *wlep_rap, *neu_rap, *elr_rap, *mur_rap, *elg_rap, *mug_rap, *met_rap;
   
-  TH1D *whad_pt_smear, *wlep_pt_smear, *el_pt_smear, *mu_pt_smear, *met_pt_smear, *parton0_pt_smear, *parton1_pt_smear;
-  TH1D *whad_phi_smear, *wlep_phi_smear, *el_phi_smear, *mu_phi_smear, *met_phi_smear, *parton0_phi_smear, *parton1_phi_smear;
-  TH1D *whad_eta_smear, *wlep_eta_smear, *el_eta_smear, *mu_eta_smear, *met_eta_smear, *parton0_eta_smear, *parton1_eta_smear;
+  TH1D *vhad_pt_smear, *wlep_pt_smear, *el_pt_smear, *mu_pt_smear, *met_pt_smear, *parton0_pt_smear, *parton1_pt_smear;
+  TH1D *vhad_phi_smear, *wlep_phi_smear, *el_phi_smear, *mu_phi_smear, *met_phi_smear, *parton0_phi_smear, *parton1_phi_smear;
+  TH1D *vhad_eta_smear, *wlep_eta_smear, *el_eta_smear, *mu_eta_smear, *met_eta_smear, *parton0_eta_smear, *parton1_eta_smear;
   
   TH1D *wminus_theta, *wplus_theta, *lepton_theta, *neutrino_theta, *quark_theta, *antiquark_theta;
   TH1D *wminus_phi, *wplus_phi, *lepton_phi, *neutrino_phi, *quark_phi, *antiquark_phi;
@@ -350,7 +492,7 @@ private:
   //other file has many more bools, string vectors, shared pointers, string, tfile, th1ds, ints
 
 
-  //MULTIPLE WEIGHTS
+  //MULTIPLE_WEIGHTS
   edm::EDGetTokenT<Double_t> mgreweight1_;
   edm::EDGetTokenT<Double_t> mgreweight2_;
   edm::EDGetTokenT<Double_t> mgreweight3_;
@@ -402,6 +544,10 @@ private:
   edm::EDGetTokenT<Double_t> mgreweight49_;
   edm::EDGetTokenT<Double_t> mgreweight50_;*/
 
+  //NEW_WEIGHTS
+  edm::EDGetTokenT<LHEeventProduct>  LHEEventProductTokenExternal;
+  LHEEventProductTokenExternal = mayConsume<LHEeventProduct> (edm::InputTag("externalLHEProducer"));
+
   TTree *MyTree; //other file had some vectors and a string before listings
 
   std::vector<std::string> *Trig_Names = new std::vector<std::string>;
@@ -423,20 +569,8 @@ private:
 
   Double_t gen_konstant = -99.9;
   Double_t reco_konstant = -99.9;
-
-  particle Wpls_gen;
-
-  particle Wmns_gen;
-
-  particle Zntrl_gen;
-
-  particle qrk_gen;
- 
-  particle antiqrk_gen;
-
-  particle lptn_gen;
-
-  particle ntrno_gen;
+  Double_t other_reco_konstant = -99.9;
+  Double_t correctedWmass = -99.9;
 
   Double_t lepton_deltaR = -99.9;
   Double_t lepton_deltaPhi = -99.9;
@@ -448,7 +582,14 @@ private:
 
   Double_t neutrino_deltaPhi = -99.9;
   Double_t other_neutrino_deltaPhi = -99.9;
+
   Double_t neutrino_deltaPt = -99.9;
+  Double_t other_neutrino_deltaPt = -99.9;
+  
+  Double_t neutrino_deltaPx = -99.9;//hey
+  Double_t other_neutrino_deltaPx = -99.9;
+  Double_t neutrino_deltaPy = -99.9;
+  Double_t other_neutrino_deltaPy = -99.9;
 
   Double_t jet0_deltaR = -99.9;
   Double_t jet1_deltaR = -99.9;
@@ -493,9 +634,6 @@ private:
 
   Double_t Tau21 = -99.9; Double_t Tau32 = -99.9; Double_t PTau21 = -99.9; Double_t PTau32 = -99.9;
 
-  //LONG CHAIN
-  particle Whad_reco, Wlep_reco, ntrno_reco, other_ntrno_reco, truth_ntrno_reco, false_ntrno_reco, muon_reco, electrn_reco, lepton_reco, jt0, jt1, subjt0, subjt1;
-
   Int_t extra_muon = 0;
   Int_t extra_electron = 0;
   Int_t no_leptons = 0;
@@ -507,7 +645,6 @@ private:
   Int_t extra_merged_jet = 0;
   Int_t met_small = 0;
   Int_t bad_dijet = 0;
-  Int_t undefined_met = 0;
   Int_t no_merged_jet = 0;
   Int_t reco_lep_generation = 0;
   Int_t gen_lep_generation = 0;
@@ -518,7 +655,36 @@ private:
   Int_t mu_event = -1;
   Int_t el_event = -1;
 
-  //MULTIPLE WEIGTHS
+  particle Wpls_gen;
+  particle Wmns_gen;
+  particle Zntrl_gen;
+  particle Vhad_gen;
+  particle Wlep_gen;
+  particle qrk_gen;
+  particle antiqrk_gen;
+  particle lepton_gen;
+  particle neutrino_gen;
+  particle WV_gen;
+  particle WV_gen_reco;
+
+  particle Vhad_reco;
+  particle Wlep_reco;
+  particle neutrino_reco;
+  particle other_neutrino_reco;
+  particle truth_neutrino_reco;
+  particle false_neutrino_reco;
+  particle muon_reco;
+  particle electron_reco;
+  particle lepton_reco;
+  particle jt0;
+  particle jt1;
+  particle subjt0;
+  particle subjt1;
+  particle other_Wlep_reco;
+  particle WV_reco;
+  particle other_WV_reco;
+ 
+  //MULTIPLE_WEIGHTS
   Double_t anom_weight1;
   Double_t anom_weight2;
   Double_t anom_weight3;
@@ -570,55 +736,74 @@ private:
   Double_t anom_weight49;
   Double_t anom_weight50;*/
 
-  //INTERMEDIATE STEPS VARIABLES
+  //NEW_WEIGHTS
+  std::vector<Double_t> aTGCWeights;
+  
+  /*/INTERMEDIATE STEPS VARIABLES
   Double_t leptons_in_lep_px = -99.9;
   Double_t leptons_in_lep_py = -99.9;
   Double_t leptons_in_lep_pz = -99.9;
+  
   Double_t partons_in_lep_px = -99.9;
   Double_t partons_in_lep_py = -99.9;
   Double_t partons_in_lep_pz = -99.9;
+  
   Double_t parton1_in_lep_px = -99.9;
-  Double_t parton2_in_lep_px = -99.9;
-  Double_t parton1_in_lep_py = -99.9;
-  Double_t parton2_in_lep_py = -99.9;
+  Double_t parton1_in_lep_py = -99.9;  
   Double_t parton1_in_lep_pz = -99.9;
+
+  Double_t parton2_in_lep_px = -99.9;
+  Double_t parton2_in_lep_py = -99.9;
   Double_t parton2_in_lep_pz = -99.9;
+  
   Double_t lepton1_in_lep_px = -99.9;
   Double_t lepton1_in_lep_py = -99.9;
   Double_t lepton1_in_lep_pz = -99.9;
+  
   Double_t lepton1_dotted_x = -99.9;
   Double_t lepton1_dotted_y = -99.9;
   Double_t lepton1_dotted_z = -99.9;
+  
   Double_t leptons_in_had_px = -99.9;
   Double_t leptons_in_had_py = -99.9;
   Double_t leptons_in_had_pz = -99.9;
+  
   Double_t lepton1_in_had_px = -99.9;
   Double_t lepton1_in_had_py = -99.9;
   Double_t lepton1_in_had_pz = -99.9;
+  
   Double_t lepton2_in_had_px = -99.9;
   Double_t lepton2_in_had_py = -99.9;
   Double_t lepton2_in_had_pz = -99.9;
+  
   Double_t parton1_in_had_px = -99.9;
   Double_t parton1_in_had_py = -99.9;
   Double_t parton1_in_had_pz = -99.9;
+  
   Double_t parton1_dotted_x = -99.9;
   Double_t parton1_dotted_y = -99.9;
   Double_t parton1_dotted_z = -99.9;
+  
   Double_t complicated1_px = -99.9;
   Double_t complicated1_py = -99.9;
   Double_t complicated1_pz = -99.9;
+  
   Double_t complicated2_px = -99.9;
   Double_t complicated2_py = -99.9;
   Double_t complicated2_pz = -99.9;
+  
   Double_t lepton1WWframe_X = -99.9;
   Double_t lepton1WWframe_Y = -99.9;
   Double_t lepton1WWframe_Z = -99.9;
+  
   Double_t lepton_sumWWframe_X = -99.9;
   Double_t lepton_sumWWframe_Y = -99.9;
   Double_t lepton_sumWWframe_Z = -99.9;
+  
   Double_t parton1WWframe_X = -99.9;
   Double_t parton1WWframe_Y = -99.9;
   Double_t parton1WWframe_Z = -99.9;
+  
   Double_t parton_sumWWframe_X = -99.9;
   Double_t parton_sumWWframe_Y = -99.9;
   Double_t parton_sumWWframe_Z = -99.9;
@@ -626,13 +811,113 @@ private:
   Double_t boostWWframe_X = -99.9;
   Double_t boostWWframe_Y = -99.9;
   Double_t boostWWframe_Z = -99.9;
+  
   Double_t boostWlep_X = -99.9;
   Double_t boostWlep_Y = -99.9;
   Double_t boostWlep_Z = -99.9;
+  
   Double_t boostWhad_X = -99.9;
   Double_t boostWhad_Y = -99.9;
   Double_t boostWhad_Z = -99.9;
 
+  Double_t xdotx = -99.9;
+  Double_t xdoty = -99.9;
+  Double_t xdotz = -99.9;
+
+  Double_t ydotx = -99.9;
+  Double_t ydoty = -99.9;
+  Double_t ydotz = -99.9;
+
+  Double_t zdotx = -99.9;
+  Double_t zdoty = -99.9;
+  Double_t zdotz = -99.9;
+
+  Double_t lepton1WWframe_UX = -99.9; Double_t lepton1WWframe_UY = -99.9; Double_t lepton1WWframe_UZ = -99.9; Double_t lepton_sumWWframe_UX = -99.9; Double_t lepton_sumWWframe_UY = -99.9; Double_t lepton_sumWWframe_UZ = -99.9;
+
+  ///////////////////////////////////////////////
+
+  Int_t leptons_in_lep_px_good = -9;
+  Int_t leptons_in_lep_py_good = -9;
+  Int_t leptons_in_lep_pz_good = -9;
+  
+  Int_t partons_in_lep_px_good = -9;
+  Int_t partons_in_lep_py_good = -9;
+  Int_t partons_in_lep_pz_good = -9;
+  
+  Int_t parton1_in_lep_px_good = -9;
+  Int_t parton1_in_lep_py_good = -9;  
+  Int_t parton1_in_lep_pz_good = -9;
+
+  Int_t parton2_in_lep_px_good = -9;
+  Int_t parton2_in_lep_py_good = -9;
+  Int_t parton2_in_lep_pz_good = -9;
+  
+  Int_t lepton1_in_lep_px_good = -9;
+  Int_t lepton1_in_lep_py_good = -9;
+  Int_t lepton1_in_lep_pz_good = -9;
+  
+  //Int_t lepton1_dotted_x_good = -9;
+  //Int_t lepton1_dotted_y_good = -9;
+  //Int_t lepton1_dotted_z_good = -9;
+  
+  Int_t leptons_in_had_px_good = -9;
+  Int_t leptons_in_had_py_good = -9;
+  Int_t leptons_in_had_pz_good = -9;
+  
+  Int_t lepton1_in_had_px_good = -9;
+  Int_t lepton1_in_had_py_good = -9;
+  Int_t lepton1_in_had_pz_good = -9;
+  
+  Int_t lepton2_in_had_px_good = -9;
+  Int_t lepton2_in_had_py_good = -9;
+  Int_t lepton2_in_had_pz_good = -9;
+  
+  Int_t parton1_in_had_px_good = -9;
+  Int_t parton1_in_had_py_good = -9;
+  Int_t parton1_in_had_pz_good = -9;
+  
+  //Int_t parton1_dotted_x_good = -9;
+  //Int_t parton1_dotted_y_good = -9;
+  //Int_t parton1_dotted_z_good = -9;
+  
+  //Int_t complicated1_px_good = -9;
+  //Int_t complicated1_py_good = -9;
+  //Int_t complicated1_pz_good = -9;
+  
+  //Int_t complicated2_px_good = -9;
+  //Int_t complicated2_py_good = -9;
+  //Int_t complicated2_pz_good = -9;
+  
+  Int_t lepton1WWframe_X_good = -9;
+  Int_t lepton1WWframe_Y_good = -9;
+  Int_t lepton1WWframe_Z_good = -9;
+  
+  Int_t lepton_sumWWframe_X_good = -9;
+  Int_t lepton_sumWWframe_Y_good = -9;
+  Int_t lepton_sumWWframe_Z_good = -9;
+  
+  Int_t parton1WWframe_X_good = -9;
+  Int_t parton1WWframe_Y_good = -9;
+  Int_t parton1WWframe_Z_good = -9;
+  
+  Int_t parton_sumWWframe_X_good = -9;
+  Int_t parton_sumWWframe_Y_good = -9;
+  Int_t parton_sumWWframe_Z_good = -9;
+
+  //Int_t boostWWframe_X_good = -9;
+  //Int_t boostWWframe_Y_good = -9;
+  //Int_t boostWWframe_Z_good = -9;
+  
+  //Int_t boostWlep_X_good = -9;
+  //Int_t boostWlep_Y_good = -9;
+  //Int_t boostWlep_Z_good = -9;
+  
+  //Int_t boostWhad_X_good = -9;
+  //Int_t boostWhad_Y_good = -9;
+  //Int_t boostWhad_Z_good = -9;
+
+  /////////////////////////////////////////////////////////////
+  //*/
   Int_t imaginary_neutrino = -1;
 
   Int_t Wcount = 0;
@@ -668,7 +953,7 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
   //badChargedCandidateFilterToken_(consumes<bool>(edm::InputTag("BadChargedCandidateFilter", ""))),
   muonToken_(consumes<pat::MuonCollection>(edm::InputTag("slimmedMuons"))),
   electronToken_(consumes<pat::ElectronCollection>(edm::InputTag("slimmedElectrons"))),
-  metToken_(consumes<pat::METCollection>(edm::InputTag("slimmedMETs"))),//#multiweight
+  metToken_(consumes<pat::METCollection>(edm::InputTag("slimmedMETs"))),//#multiw eight
   //pileupInfoToken_(consumes<std::vector<PileupSummaryInfo>>(edm::InputTag("slimmedAddPileupInfo"))),
   //theSrc_(consumes<LHEEventProduct>(iConfig.getParameter<edm::InputTag>("theSrc"))),
   //pdfToken_(consumes<GenEventInfoProduct>(edm::InputTag("generator"))),
@@ -681,7 +966,7 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
   //jet_scale_fac_textfile_ (iConfig.getParameter<std::string> ("jet_scale_fac_textfile")),
   //ak4_textfile_ (iConfig.getParameter<std::string> ("ak4_textfile"))
   //ak8_textfile_ (iConfig.getParameter<std::string> ("ak8_textfile"))
-
+  //MULTI_WEIGHTS
   mgreweight1_(consumes<Double_t>(edm::InputTag("allWeights", "mgreweight1", "HLT"))),
   mgreweight2_(consumes<Double_t>(edm::InputTag("allWeights", "mgreweight2", "HLT"))),
   mgreweight3_(consumes<Double_t>(edm::InputTag("allWeights", "mgreweight3", "HLT"))),
@@ -760,7 +1045,7 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
 
   wp_pt = fileservice->make<TH1D>("wp_pt", "gen wplus pt", 200, 0.0, 999.0);
   wm_pt = fileservice->make<TH1D>("wm_pt", "gen wminus pt", 200, 0.0, 999.0);
-  whad_pt = fileservice->make<TH1D>("whad_pt", "reco whad pt", 200, 0.0, 999.0);
+  vhad_pt = fileservice->make<TH1D>("vhad_pt", "reco vhad pt", 200, 0.0, 999.0);
   wlep_pt = fileservice->make<TH1D>("wlep_pt", "reco wlep pt", 200, 0.0, 999.0);
   neu_pt = fileservice->make<TH1D>("neu_pt", "gen neutrino pt", 200, 0.0, 500.0);
   met_pt = fileservice->make<TH1D>("met_pt", "reco MET pt", 200, 0.0, 500.0);
@@ -769,7 +1054,7 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
   elg_pt = fileservice->make<TH1D>("elg_pt", "gen electron pt", 200, 0.0, 500.0);
   mug_pt = fileservice->make<TH1D>("mug_pt", "gen muon pt", 200, 0.0, 500.0);
 
-  whad_pt_smear = fileservice->make<TH1D>("whad_pt_smear", "whad pt smearing", 200, -100.0, 100.0);
+  vhad_pt_smear = fileservice->make<TH1D>("vhad_pt_smear", "vhad pt smearing", 200, -100.0, 100.0);
   wlep_pt_smear = fileservice->make<TH1D>("wlep_pt_smear", "wlep pt smearing", 200, -100.0, 100.0);
   met_pt_smear = fileservice->make<TH1D>("met_pt_smear", "MET pt smearing", 200, -100.0, 100.0);
   el_pt_smear = fileservice->make<TH1D>("el_pt_smear", "electron pt smearing", 200, -10.0, 10.0);
@@ -777,7 +1062,7 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
   parton0_pt_smear = fileservice->make<TH1D>("parton0_pt_smear", "parton0 pt smearing", 200, -80.0, 80.0);
   parton1_pt_smear = fileservice->make<TH1D>("parton1_pt_smear", "parton1 pt smearing", 200, -80.0, 80.0);
 
-  whad_phi_smear = fileservice->make<TH1D>("whad_phi_smear", "whad phi smearing", 200, -0.2, 0.2);
+  vhad_phi_smear = fileservice->make<TH1D>("vhad_phi_smear", "vhad phi smearing", 200, -0.2, 0.2);
   wlep_phi_smear = fileservice->make<TH1D>("wlep_phi_smear", "wlep phi smearing", 200, -0.4, 0.4);
   met_phi_smear = fileservice->make<TH1D>("met_phi_smear", "MET phi smearing", 200, -1.0, 1.0);
   el_phi_smear = fileservice->make<TH1D>("el_phi_smear", "electron phi smearing", 200, -0.015, 0.015);
@@ -785,7 +1070,7 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
   parton0_phi_smear = fileservice->make<TH1D>("parton0_phi_smear", "parton0 phi smearing", 200, -0.2, 0.2);
   parton1_phi_smear = fileservice->make<TH1D>("parton1_phi_smear", "parton1 phi smearing", 200, -0.2, 0.2);
 
-  whad_eta_smear = fileservice->make<TH1D>("whad_eta_smear", "whad eta smearing", 200, -1.0, 1.0);
+  vhad_eta_smear = fileservice->make<TH1D>("vhad_eta_smear", "vhad eta smearing", 200, -1.0, 1.0);
   wlep_eta_smear = fileservice->make<TH1D>("wlep_eta_smear", "wlep eta smearing", 200, -1.5, 1.5);
   met_eta_smear = fileservice->make<TH1D>("met_eta_smear", "MET eta smearing", 200, -4.0, 4.0);
   el_eta_smear = fileservice->make<TH1D>("el_eta_smear", "electron eta smearing", 200, -0.005, 0.005);
@@ -795,7 +1080,7 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
   
   wp_rap = fileservice->make<TH1D>("wp_rap", "gen wplus rap", 200, -3.0, +3.0);
   wm_rap = fileservice->make<TH1D>("wm_rap", "gen wminus rap", 200, -3.0, +3.0);
-  whad_rap = fileservice->make<TH1D>("whad_rap", "reco whad rap", 200, -2.5, +2.5);
+  vhad_rap = fileservice->make<TH1D>("vhad_rap", "reco vhad rap", 200, -2.5, +2.5);
   wlep_rap = fileservice->make<TH1D>("wlep_rap", "reco wlep rap", 200, -3.0, +3.0);
   neu_rap = fileservice->make<TH1D>("neu_rap", "gen neutrino rap", 200, -4.0, +4.0);
   met_rap = fileservice->make<TH1D>("met_rap", "reco MET rap", 200, -4.0, +4.0);
@@ -889,7 +1174,8 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
   MyTree->Branch("Tau32", &Tau32, "Tau32/D");
   MyTree->Branch("PTau21", &PTau21, "PTau21/D");
   MyTree->Branch("PTau32", &PTau32, "PTau32/D");
-  
+  MyTree->Branch("reco_lep_generation", &reco_lep_generation, "reco_lep_generation/I");
+  MyTree->Branch("gen_lep_generation", &gen_lep_generation, "gen_lep_generation/I");
   
   //PARTICLES START HERE
   //MyTree->Branch("", &, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
@@ -897,26 +1183,34 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
   MyTree->Branch("Wpls_gen", &Wpls_gen, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
   MyTree->Branch("Wmns_gen", &Wmns_gen, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
   MyTree->Branch("Zntrl_gen", &Zntrl_gen, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("Wlep_gen", &Wlep_gen, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("Vhad_gen", &Vhad_gen, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
   MyTree->Branch("qrk_gen", &qrk_gen, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
   MyTree->Branch("antiqrk_gen", &antiqrk_gen, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
-  MyTree->Branch("lptn_gen", &lptn_gen, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
-  MyTree->Branch("ntrno_gen", &ntrno_gen, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("lepton_gen", &lepton_gen, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("neutrino_gen", &neutrino_gen, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
 
-  MyTree->Branch("Whad_reco", &Whad_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("Vhad_reco", &Vhad_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
   MyTree->Branch("Wlep_reco", &Wlep_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("other_Wlep_reco", &other_Wlep_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
   MyTree->Branch("muon_reco", &muon_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
-  MyTree->Branch("electrn_reco", &electrn_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("electron_reco", &electron_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
   MyTree->Branch("lepton_reco", &lepton_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
   MyTree->Branch("jt0", &jt0, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
   MyTree->Branch("jt1", &jt1, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
   MyTree->Branch("subjt0", &subjt0, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
   MyTree->Branch("subjt1", &subjt1, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
 
-  MyTree->Branch("ntrno_reco", &ntrno_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
-  MyTree->Branch("other_ntrno_reco", &other_ntrno_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
-  MyTree->Branch("truth_ntrno_reco", &truth_ntrno_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
-  MyTree->Branch("false_ntrno_reco", &false_ntrno_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
-
+  MyTree->Branch("neutrino_reco", &neutrino_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("other_neutrino_reco", &other_neutrino_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("truth_neutrino_reco", &truth_neutrino_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("false_neutrino_reco", &false_neutrino_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("WV_reco", &WV_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("other_WV_reco", &other_WV_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("WV_gen", &WV_gen, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  MyTree->Branch("WV_gen_reco", &WV_gen_reco, "Px/D:Py:Pz:E:M:Pt:Eta:Theta:Phi:Y");
+  
+  MyTree->Branch("correctedWmass", &correctedWmass, "correctedWmass/D");
 
   MyTree->Branch("lepton_deltaR", &lepton_deltaR, "lepton_deltaR/D");
   MyTree->Branch("neutrino_deltaR", &neutrino_deltaR, "neutrino_deltaR/D");
@@ -931,7 +1225,14 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
   MyTree->Branch("lepton_deltaPhi", &lepton_deltaPhi, "lepton_deltaPhi/D");
   MyTree->Branch("neutrino_deltaPhi", &neutrino_deltaPhi, "neutrino_deltaPhi/D");
   MyTree->Branch("other_neutrino_deltaPhi", &other_neutrino_deltaPhi, "other_neutrino_deltaPhi/D");
+  
   MyTree->Branch("neutrino_deltaPt", &neutrino_deltaPt, "neutrino_deltaPt/D");
+  MyTree->Branch("other_neutrino_deltaPt", &other_neutrino_deltaPt, "other_neutrino_deltaPt/D");
+  
+  MyTree->Branch("neutrino_deltaPx", &neutrino_deltaPx, "neutrino_deltaPx/D");//hey
+  MyTree->Branch("other_neutrino_deltaPx", &other_neutrino_deltaPx, "other_neutrino_deltaPx/D");
+  MyTree->Branch("neutrino_deltaPy", &neutrino_deltaPy, "neutrino_deltaPy/D");
+  MyTree->Branch("other_neutrino_deltaPy", &other_neutrino_deltaPy, "other_neutrino_deltaPy/D");
 
   MyTree->Branch("extra_muon", &extra_muon, "extra_muon/I");
   MyTree->Branch("extra_electron", &extra_electron, "extra_electron/I");
@@ -944,13 +1245,13 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
   MyTree->Branch("extra_merged_jet", &extra_merged_jet, "extra_merged_jet/I");
   MyTree->Branch("met_small", &met_small, "met_small/I");
   MyTree->Branch("bad_dijet", &bad_dijet, "bad_dijet/I");
-  MyTree->Branch("undefined_met", &undefined_met, "undefined_met/I");
   MyTree->Branch("no_merged_jet", &no_merged_jet, "no_merged_jet/I");
   MyTree->Branch("mu_tight", &mu_tight, "mu_tight/I");
   MyTree->Branch("merged_event", &merged_event, "merged_event/I");
   MyTree->Branch("mu_event", &mu_event, "mu_event/I");
   MyTree->Branch("el_event", &el_event, "el_event/I");
 
+#ifdef MULTI_WEIGHTS
   MyTree->Branch("anom_weight1", &anom_weight1, "anom_weight1/D");
   MyTree->Branch("anom_weight2", &anom_weight2, "anom_weight2/D");
   MyTree->Branch("anom_weight3", &anom_weight3, "anom_weight3/D");
@@ -971,7 +1272,7 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
   MyTree->Branch("anom_weight18", &anom_weight18, "anom_weight18/D");
   MyTree->Branch("anom_weight19", &anom_weight19, "anom_weight19/D");
   MyTree->Branch("anom_weight20", &anom_weight20, "anom_weight20/D");
-  / *MyTree->Branch("anom_weight21", &anom_weight21, "anom_weight21/D");
+  MyTree->Branch("anom_weight21", &anom_weight21, "anom_weight21/D");
   MyTree->Branch("anom_weight22", &anom_weight22, "anom_weight22/D");
   MyTree->Branch("anom_weight23", &anom_weight23, "anom_weight23/D");
   MyTree->Branch("anom_weight24", &anom_weight24, "anom_weight24/D");
@@ -1001,43 +1302,57 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
   MyTree->Branch("anom_weight48", &anom_weight48, "anom_weight48/D");
   MyTree->Branch("anom_weight49", &anom_weight49, "anom_weight49/D");
   MyTree->Branch("anom_weight50", &anom_weight50, "anom_weight50/D");*/
-  /*
+#endif
+
+  /*/INTERMEDIATE STEPS VARIABLES
   MyTree->Branch("leptons_in_lep_px", &leptons_in_lep_px, "leptons_in_lep_px/D");
   MyTree->Branch("leptons_in_lep_py", &leptons_in_lep_py, "leptons_in_lep_py/D");
   MyTree->Branch("leptons_in_lep_pz", &leptons_in_lep_pz, "leptons_in_lep_pz/D");
+  
   MyTree->Branch("partons_in_lep_px", &partons_in_lep_px, "partons_in_lep_px/D");
   MyTree->Branch("partons_in_lep_py", &partons_in_lep_py, "partons_in_lep_py/D");
   MyTree->Branch("partons_in_lep_pz", &partons_in_lep_pz, "partons_in_lep_pz/D");
+  
   MyTree->Branch("parton1_in_lep_px", &parton1_in_lep_px, "parton1_in_lep_px/D");
-  MyTree->Branch("parton2_in_lep_px", &parton2_in_lep_px, "parton2_in_lep_px/D");
-  MyTree->Branch("parton1_in_lep_py", &parton1_in_lep_py, "parton1_in_lep_py/D");
-  MyTree->Branch("parton2_in_lep_py", &parton2_in_lep_py, "parton2_in_lep_py/D");
+  MyTree->Branch("parton1_in_lep_py", &parton1_in_lep_py, "parton1_in_lep_py/D"); 
   MyTree->Branch("parton1_in_lep_pz", &parton1_in_lep_pz, "parton1_in_lep_pz/D");
+
+  MyTree->Branch("parton2_in_lep_px", &parton2_in_lep_px, "parton2_in_lep_px/D");
+  MyTree->Branch("parton2_in_lep_py", &parton2_in_lep_py, "parton2_in_lep_py/D");
   MyTree->Branch("parton2_in_lep_pz", &parton2_in_lep_pz, "parton2_in_lep_pz/D");
+  
   MyTree->Branch("lepton1_in_lep_px", &lepton1_in_lep_px, "lepton1_in_lep_px/D");
   MyTree->Branch("lepton1_in_lep_py", &lepton1_in_lep_py, "lepton1_in_lep_py/D");
   MyTree->Branch("lepton1_in_lep_pz", &lepton1_in_lep_pz, "lepton1_in_lep_pz/D");
+  
   MyTree->Branch("lepton1_dotted_x", &lepton1_dotted_x, "lepton1_dotted_x/D");
   MyTree->Branch("lepton1_dotted_y", &lepton1_dotted_y, "lepton1_dotted_y/D");
   MyTree->Branch("lepton1_dotted_z", &lepton1_dotted_z, "lepton1_dotted_z/D");
+  
   MyTree->Branch("leptons_in_had_px", &leptons_in_had_px, "leptons_in_had_px/D");
   MyTree->Branch("leptons_in_had_py", &leptons_in_had_py, "leptons_in_had_py/D");
   MyTree->Branch("leptons_in_had_pz", &leptons_in_had_pz, "leptons_in_had_pz/D");
+  
   MyTree->Branch("lepton1_in_had_px", &lepton1_in_had_px, "lepton1_in_had_px/D");
   MyTree->Branch("lepton1_in_had_py", &lepton1_in_had_py, "lepton1_in_had_py/D");
   MyTree->Branch("lepton1_in_had_pz", &lepton1_in_had_pz, "lepton1_in_had_pz/D");
+  
   MyTree->Branch("lepton2_in_had_px", &lepton2_in_had_px, "lepton2_in_had_px/D");
   MyTree->Branch("lepton2_in_had_py", &lepton2_in_had_py, "lepton2_in_had_py/D");
   MyTree->Branch("lepton2_in_had_pz", &lepton2_in_had_pz, "lepton2_in_had_pz/D");
+  
   MyTree->Branch("parton1_in_had_px", &parton1_in_had_px, "parton1_in_had_px/D");
   MyTree->Branch("parton1_in_had_py", &parton1_in_had_py, "parton1_in_had_py/D");
   MyTree->Branch("parton1_in_had_pz", &parton1_in_had_pz, "parton1_in_had_pz/D");
+  
   MyTree->Branch("parton1_dotted_x", &parton1_dotted_x, "parton1_dotted_x/D");
   MyTree->Branch("parton1_dotted_y", &parton1_dotted_y, "parton1_dotted_y/D");
   MyTree->Branch("parton1_dotted_z", &parton1_dotted_z, "parton1_dotted_z/D");
+  
   MyTree->Branch("complicated1_px", &complicated1_px, "complicated1_px/D");
   MyTree->Branch("complicated1_py", &complicated1_py, "complicated1_py/D");
   MyTree->Branch("complicated1_pz", &complicated1_pz, "complicated1_pz/D");
+  
   MyTree->Branch("complicated2_px", &complicated2_px, "complicated2_px/D");
   MyTree->Branch("complicated2_py", &complicated2_py, "complicated2_py/D");
   MyTree->Branch("complicated2_pz", &complicated2_pz, "complicated2_pz/D");
@@ -1061,12 +1376,117 @@ ntuplizer::ntuplizer(const edm::ParameterSet& iConfig):
   MyTree->Branch("boostWWframe_X", &boostWWframe_X, "boostWWframe_X/D");
   MyTree->Branch("boostWWframe_Y", &boostWWframe_Y, "boostWWframe_Y/D");
   MyTree->Branch("boostWWframe_Z", &boostWWframe_Z, "boostWWframe_Z/D");
+  
   MyTree->Branch("boostWlep_X", &boostWlep_X, "boostWlep_X/D");
   MyTree->Branch("boostWlep_Y", &boostWlep_Y, "boostWlep_Y/D");
   MyTree->Branch("boostWlep_Z", &boostWlep_Z, "boostWlep_Z/D");
+  
   MyTree->Branch("boostWhad_X", &boostWhad_X, "boostWhad_X/D");
   MyTree->Branch("boostWhad_Y", &boostWhad_Y, "boostWhad_Y/D");
-  MyTree->Branch("boostWhad_Z", &boostWhad_Z, "boostWhad_Z/D");*/
+  MyTree->Branch("boostWhad_Z", &boostWhad_Z, "boostWhad_Z/D");
+
+  MyTree->Branch("xdotx", &xdotx, "xdotx/D");
+  MyTree->Branch("xdoty", &xdoty, "xdoty/D");
+  MyTree->Branch("xdotz", &xdotz, "xdotz/D");
+
+  MyTree->Branch("ydotx", &ydotx, "ydotx/D");
+  MyTree->Branch("ydoty", &ydoty, "ydoty/D");
+  MyTree->Branch("ydotz", &ydotz, "ydotz/D");
+
+  MyTree->Branch("zdotx", &zdotx, "zdotx/D");
+  MyTree->Branch("zdoty", &zdoty, "zdoty/D");
+  MyTree->Branch("zdotz", &zdotz, "zdotz/D");
+
+  MyTree->Branch("lepton1WWframe_UX", &lepton1WWframe_UX, "lepton1WWframe_UX/D");
+  MyTree->Branch("lepton1WWframe_UY", &lepton1WWframe_UY, "lepton1WWframe_UY/D");
+  MyTree->Branch("lepton1WWframe_UZ", &lepton1WWframe_UZ, "lepton1WWframe_UZ/D");
+   
+  MyTree->Branch("lepton_sumWWframe_UX", &lepton_sumWWframe_UX, "lepton_sumWWframe_UX/D");
+  MyTree->Branch("lepton_sumWWframe_UY", &lepton_sumWWframe_UY, "lepton_sumWWframe_UY/D");
+  MyTree->Branch("lepton_sumWWframe_UZ", &lepton_sumWWframe_UZ, "lepton_sumWWframe_UZ/D");
+
+  /////////////////////////////////////////////////////////////////////////////////////////////
+  
+  MyTree->Branch("leptons_in_lep_px_good", &leptons_in_lep_px_good, "leptons_in_lep_px_good/I");
+  MyTree->Branch("leptons_in_lep_py_good", &leptons_in_lep_py_good, "leptons_in_lep_py_good/I");
+  MyTree->Branch("leptons_in_lep_pz_good", &leptons_in_lep_pz_good, "leptons_in_lep_pz_good/I");
+  
+  MyTree->Branch("partons_in_lep_px_good", &partons_in_lep_px_good, "partons_in_lep_px_good/I");
+  MyTree->Branch("partons_in_lep_py_good", &partons_in_lep_py_good, "partons_in_lep_py_good/I");
+  MyTree->Branch("partons_in_lep_pz_good", &partons_in_lep_pz_good, "partons_in_lep_pz_good/I");
+  
+  MyTree->Branch("parton1_in_lep_px_good", &parton1_in_lep_px_good, "parton1_in_lep_px_good/I");
+  MyTree->Branch("parton1_in_lep_py_good", &parton1_in_lep_py_good, "parton1_in_lep_py_good/I"); 
+  MyTree->Branch("parton1_in_lep_pz_good", &parton1_in_lep_pz_good, "parton1_in_lep_pz_good/I");
+
+  MyTree->Branch("parton2_in_lep_px_good", &parton2_in_lep_px_good, "parton2_in_lep_px_good/I");
+  MyTree->Branch("parton2_in_lep_py_good", &parton2_in_lep_py_good, "parton2_in_lep_py_good/I");
+  MyTree->Branch("parton2_in_lep_pz_good", &parton2_in_lep_pz_good, "parton2_in_lep_pz_good/I");
+  
+  MyTree->Branch("lepton1_in_lep_px_good", &lepton1_in_lep_px_good, "lepton1_in_lep_px_good/I");
+  MyTree->Branch("lepton1_in_lep_py_good", &lepton1_in_lep_py_good, "lepton1_in_lep_py_good/I");
+  MyTree->Branch("lepton1_in_lep_pz_good", &lepton1_in_lep_pz_good, "lepton1_in_lep_pz_good/I");
+  
+  //MyTree->Branch("lepton1_dotted_x_good", &lepton1_dotted_x_good, "lepton1_dotted_x_good/I");
+  //MyTree->Branch("lepton1_dotted_y_good", &lepton1_dotted_y_good, "lepton1_dotted_y_good/I");
+  //MyTree->Branch("lepton1_dotted_z_good", &lepton1_dotted_z_good, "lepton1_dotted_z_good/I");
+  
+  MyTree->Branch("leptons_in_had_px_good", &leptons_in_had_px_good, "leptons_in_had_px_good/I");
+  MyTree->Branch("leptons_in_had_py_good", &leptons_in_had_py_good, "leptons_in_had_py_good/I");
+  MyTree->Branch("leptons_in_had_pz_good", &leptons_in_had_pz_good, "leptons_in_had_pz_good/I");
+  
+  MyTree->Branch("lepton1_in_had_px_good", &lepton1_in_had_px_good, "lepton1_in_had_px_good/I");
+  MyTree->Branch("lepton1_in_had_py_good", &lepton1_in_had_py_good, "lepton1_in_had_py_good/I");
+  MyTree->Branch("lepton1_in_had_pz_good", &lepton1_in_had_pz_good, "lepton1_in_had_pz_good/I");
+  
+  MyTree->Branch("lepton2_in_had_px_good", &lepton2_in_had_px_good, "lepton2_in_had_px_good/I");
+  MyTree->Branch("lepton2_in_had_py_good", &lepton2_in_had_py_good, "lepton2_in_had_py_good/I");
+  MyTree->Branch("lepton2_in_had_pz_good", &lepton2_in_had_pz_good, "lepton2_in_had_pz_good/I");
+  
+  MyTree->Branch("parton1_in_had_px_good", &parton1_in_had_px_good, "parton1_in_had_px_good/I");
+  MyTree->Branch("parton1_in_had_py_good", &parton1_in_had_py_good, "parton1_in_had_py_good/I");
+  MyTree->Branch("parton1_in_had_pz_good", &parton1_in_had_pz_good, "parton1_in_had_pz_good/I");
+  
+  //MyTree->Branch("parton1_dotted_x_good", &parton1_dotted_x_good, "parton1_dotted_x_good/I");
+  //MyTree->Branch("parton1_dotted_y_good", &parton1_dotted_y_good, "parton1_dotted_y_good/I");
+  //MyTree->Branch("parton1_dotted_z_good", &parton1_dotted_z_good, "parton1_dotted_z_good/I");
+  
+  //MyTree->Branch("complicated1_px_good", &complicated1_px_good, "complicated1_px_good/I");
+  //MyTree->Branch("complicated1_py_good", &complicated1_py_good, "complicated1_py_good/I");
+  //MyTree->Branch("complicated1_pz_good", &complicated1_pz_good, "complicated1_pz_good/I");
+  
+  //MyTree->Branch("complicated2_px_good", &complicated2_px_good, "complicated2_px_good/I");
+  //MyTree->Branch("complicated2_py_good", &complicated2_py_good, "complicated2_py_good/I");
+  //MyTree->Branch("complicated2_pz_good", &complicated2_pz_good, "complicated2_pz_good/I");
+  
+  MyTree->Branch("lepton_sumWWframe_X_good", &lepton_sumWWframe_X_good, "lepton_sumWWframe_X_good/I");
+  MyTree->Branch("lepton_sumWWframe_Y_good", &lepton_sumWWframe_Y_good, "lepton_sumWWframe_Y_good/I");
+  MyTree->Branch("lepton_sumWWframe_Z_good", &lepton_sumWWframe_Z_good, "lepton_sumWWframe_Z_good/I");
+  
+  MyTree->Branch("parton_sumWWframe_X_good", &parton_sumWWframe_X_good, "parton_sumWWframe_X_good/I");
+  MyTree->Branch("parton_sumWWframe_Y_good", &parton_sumWWframe_Y_good, "parton_sumWWframe_Y_good/I");
+  MyTree->Branch("parton_sumWWframe_Z_good", &parton_sumWWframe_Z_good, "parton_sumWWframe_Z_good/I");
+  
+  MyTree->Branch("lepton1WWframe_X_good", &lepton1WWframe_X_good, "lepton1WWframe_X_good/I");
+  MyTree->Branch("lepton1WWframe_Y_good", &lepton1WWframe_Y_good, "lepton1WWframe_Y_good/I");
+  MyTree->Branch("lepton1WWframe_Z_good", &lepton1WWframe_Z_good, "lepton1WWframe_Z_good/I");
+  
+  MyTree->Branch("parton1WWframe_X_good", &parton1WWframe_X_good, "parton1WWframe_X_good/I");
+  MyTree->Branch("parton1WWframe_Y_good", &parton1WWframe_Y_good, "parton1WWframe_Y_good/I");
+  MyTree->Branch("parton1WWframe_Z_good", &parton1WWframe_Z_good, "parton1WWframe_Z_good/I");
+
+  //MyTree->Branch("boostWWframe_X_good", &boostWWframe_X_good, "boostWWframe_X_good/I");
+  //MyTree->Branch("boostWWframe_Y_good", &boostWWframe_Y_good, "boostWWframe_Y_good/I");
+  //MyTree->Branch("boostWWframe_Z_good", &boostWWframe_Z_good, "boostWWframe_Z_good/I");
+  
+  //MyTree->Branch("boostWlep_X_good", &boostWlep_X_good, "boostWlep_X_good/I");
+  //MyTree->Branch("boostWlep_Y_good", &boostWlep_Y_good, "boostWlep_Y_good/I");
+  //MyTree->Branch("boostWlep_Z_good", &boostWlep_Z_good, "boostWlep_Z_good/I");
+  
+  //MyTree->Branch("boostWhad_X_good", &boostWhad_X_good, "boostWhad_X_good/I");
+  //MyTree->Branch("boostWhad_Y_good", &boostWhad_Y_good, "boostWhad_Y_good/I");
+  //MyTree->Branch("boostWhad_Z_good", &boostWhad_Z_good, "boostWhad_Z_good/I");
+  //*/
 
   if (talking) outfile.open("special_output.txt");
 }
@@ -1113,6 +1533,8 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   //std::cout << "\n\nbegin event.\n";
   Bool_t bad_event = false;
+  Int_t WZevt = 0;
+  
 //#if 0
   using namespace edm;
   using namespace std;
@@ -1298,7 +1720,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   if (talking) outfile << "number of matches is " << match_count << std::endl;
 
-  if (!some_pass) return; //{std::cout << "no triggers.\n"; return;}
+  if (!some_pass) { } //return; //{std::cout << "no triggers.\n"; return;}
   
   //std::cout << std::endl << "Trig Accpt Bits is " << Trig_Accpt_Bits << std::endl;
 
@@ -1320,16 +1742,16 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   TLorentzVector Zneutral_gen;
   TLorentzVector quark_gen;
   TLorentzVector antiquark_gen;
-  TLorentzVector lepton_gen;
-  TLorentzVector neutrino_gen;
+  TLorentzVector lepton_Gen;
+  TLorentzVector neutrino_Gen;
 
   Wplus_gen.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
   Wminus_gen.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
   Zneutral_gen.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
   quark_gen.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
   antiquark_gen.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
-  lepton_gen.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
-  neutrino_gen.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
+  lepton_Gen.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
+  neutrino_Gen.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
 
   //lepton.SetPxPyPzE(99.0, 99.0, 99.0, 99.0);
 
@@ -1441,6 +1863,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      //if (pz < 0) zspace = " ";
 	      //if (pz >= 0) zspace = " +";
 	      Zneutral_gen.SetPxPyPzE(px, py, pz, e);
+	      WZevt = 1;
 	      //wflag = 0;
 	      //std::cout << "SEARCHING: status of Zneu   is" << statsp << status << " number of Zneu   daughters is" << daughtsp << ndau << " px is" << xspace << px << " py is" << yspace << py << " pz is" << zspace << pz << " e is " << e << std::endl;
 	    }
@@ -1464,7 +1887,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      //if (py >= 0) yspace = " +";
 	      //if (pz < 0) zspace = " ";
 	      //if (pz >= 0) zspace = " +";
-	      lepton_gen.SetPxPyPzE(px, py, pz, e);
+	      lepton_Gen.SetPxPyPzE(px, py, pz, e);
 	      //if (id < 0) charge =  1;
 	      //if (id > 0) charge = -1;
 	      lepton_found = true;
@@ -1493,7 +1916,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      //if (py >= 0) yspace = " +";
 	      //if (pz < 0) zspace = " ";
 	      //if (pz >= 0) zspace = " +";
-	      lepton_gen.SetPxPyPzE(px, py, pz, e);
+	      lepton_Gen.SetPxPyPzE(px, py, pz, e);
 	      //if (id < 0) charge =  1;
 	      //if (id > 0) charge = -1;
 	      lepton_found = true;
@@ -1521,7 +1944,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      //if (py >= 0) yspace = " +";
 	      //if (pz < 0) zspace = " ";
 	      //if (pz >= 0) zspace = " +";
-	      lepton_gen.SetPxPyPzE(px, py, pz, e);
+	      lepton_Gen.SetPxPyPzE(px, py, pz, e);
 	      //if (id < 0) charge =  1;
 	      //if (id > 0) charge = -1;
 	      lepton_found = true;
@@ -1549,7 +1972,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      //if (py >= 0) yspace = " +";
 	      //if (pz < 0) zspace = " ";
 	      //if (pz >= 0) zspace = " +";
-	      lepton_gen.SetPxPyPzE(px, py, pz, e);
+	      lepton_Gen.SetPxPyPzE(px, py, pz, e);
 	      //if (id < 0) charge =  1;
 	      //if (id > 0) charge = -1;
 	      lepton_found = true;
@@ -1577,7 +2000,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      //if (py >= 0) yspace = " +";
 	      //if (pz < 0) zspace = " ";
 	      //if (pz >= 0) zspace = " +";
-	      lepton_gen.SetPxPyPzE(px, py, pz, e);
+	      lepton_Gen.SetPxPyPzE(px, py, pz, e);
 	      //if (id < 0) charge =  1;
 	      //if (id > 0) charge = -1;
 	      lepton_found = true;
@@ -1605,7 +2028,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      //if (py >= 0) yspace = " +";
 	      //if (pz < 0) zspace = " ";
 	      //if (pz >= 0) zspace = " +";
-	      lepton_gen.SetPxPyPzE(px, py, pz, e);
+	      lepton_Gen.SetPxPyPzE(px, py, pz, e);
 	      //if (id < 0) charge =  1;
 	      //if (id > 0) charge = -1;
 	      lepton_found = true;
@@ -1634,7 +2057,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      //if (py >= 0) yspace = " +";
 	      //if (pz < 0) zspace= " ";
 	      //if (pz >= 0) zspace = " +";
-	      neutrino_gen.SetPxPyPzE(px, py, pz, e);
+	      neutrino_Gen.SetPxPyPzE(px, py, pz, e);
 	      //if (id > 0) charge =  1;
 	      //if (id < 0) charge = -1;
 	      neutrino_found = true;
@@ -1660,7 +2083,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      //if (py >= 0) yspace = " +";
 	      //if (pz < 0) zspace= " ";
 	      //if (pz >= 0) zspace = " +";
-	      neutrino_gen.SetPxPyPzE(px, py, pz, e);
+	      neutrino_Gen.SetPxPyPzE(px, py, pz, e);
 	      //if (id > 0) charge =  1;
 	      //if (id < 0) charge = -1;
 	      neutrino_found = true;
@@ -1686,7 +2109,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      //if (py >= 0) yspace = " +";
 	      //if (pz < 0) zspace= " ";
 	      //if (pz >= 0) zspace = " +";
-	      neutrino_gen.SetPxPyPzE(px, py, pz, e);
+	      neutrino_Gen.SetPxPyPzE(px, py, pz, e);
 	      //if (id > 0) charge =  1;
 	      //if (id < 0) charge = -1;
 	      neutrino_found = true;
@@ -1712,7 +2135,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      //if (py >= 0) yspace = " +";
 	      //if (pz < 0) zspace= " ";
 	      //if (pz >= 0) zspace = " +";
-	      neutrino_gen.SetPxPyPzE(px, py, pz, e);
+	      neutrino_Gen.SetPxPyPzE(px, py, pz, e);
 	      //if (id > 0) charge =  1;
 	      //if (id < 0) charge = -1;
 	      neutrino_found = true;
@@ -1738,7 +2161,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      //if (py >= 0) yspace = " +";
 	      //if (pz < 0) zspace= " ";
 	      //if (pz >= 0) zspace = " +";
-	      neutrino_gen.SetPxPyPzE(px, py, pz, e);
+	      neutrino_Gen.SetPxPyPzE(px, py, pz, e);
 	      //if (id > 0) charge =  1;
 	      //if (id < 0) charge = -1;
 	      neutrino_found = true;
@@ -1764,7 +2187,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      //if (py >= 0) yspace = " +";
 	      //if (pz < 0) zspace= " ";
 	      //if (pz >= 0) zspace = " +";
-	      neutrino_gen.SetPxPyPzE(px, py, pz, e);
+	      neutrino_Gen.SetPxPyPzE(px, py, pz, e);
 	      //if (id > 0) charge =  1;
 	      //if (id < 0) charge = -1;
 	      neutrino_found = true;
@@ -1870,6 +2293,8 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   if (bad_event) return; //{std::cout << "bad event reached reco leptons"; return;}
   if (bad_event) std::cout << "you shouldn't be seeing this.";
+
+  const Double_t lep_jet_R_min = 1.571;
   
   Int_t electron_value_set = 0;
   Int_t muon_value_set = 0;
@@ -2484,7 +2909,24 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //*/ 
   ///////////////////////////////////////////////////////////////END MERGED STUFF
 
- 
+  //MARKER B-TAGGED JETS
+
+  //   ____      _____  _    ____  ____ _____ ____        _ _____ _____ ____  
+  //  | __ )    |_   _|/ \  / ___|/ ___| ____|  _ \      | | ____|_   _/ ___| 
+  //  |  _ \ _____| | / _ \| |  _| |  _|  _| | | | |  _  | |  _|   | | \___ \   |
+  //  | |_) |_____| |/ ___ \ |_| | |_| | |___| |_| | | |_| | |___  | |  ___) |
+  //  |____/      |_/_/   \_\____|\____|_____|____/   \___/|_____| |_| |____/ 
+  //
+
+  if (bad_event) return; //{std::cout << "bad event reached b-tagged jets\n"; return;}
+  if (bad_event) std::cout << "you shouldn't be seeing this.";
+
+  edm::Handle<pat::JetCollection> ak4_jets;
+  iEvent.getByToken(ak4jetToken_, ak4_jets);
+
+  TLorentzVector b_tag_jet;
+  b_tag_jet.SetPxPyPzE(-99.9, -99.9, -99.9, -99.9);
+
   
   //MARKER MET
   //
@@ -2498,55 +2940,56 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   if (bad_event) return; //{std::cout << "bad event reached MET.\n"; return;}
   if (bad_event) std::cout << "you shouldn't be seeing this.";
-  
+
+  const Double_t MET_jet_phi_min = 2.0;
   edm::Handle<pat::METCollection> mets;
   iEvent.getByToken(metToken_, mets);
   const pat::MET &met = mets->front();
 
   //MISSING ET
 
-  bool angle_test = false;
+  //bool angle_test = false;
+  bool METcorrect = true;
 	
   TLorentzVector met4vector, other_met4vector;
   Double_t met_px = met.px();
   Double_t met_py = met.py();
   //if (mu_event == 1) met_py -= 6.2;
   //if (el_event == 1) met_py -= 7.7;
-  met4vector.SetPxPyPzE(met_px, met_py, 0.0, 0.0);
-  if (angle_test) met4vector.SetPxPyPzE(neutrino_gen.Px(), neutrino_gen.Py(), 0.0, neutrino_gen.Et());//ONLY A TEST
+  //met4vector.SetPxPyPzE(met_px, met_py, 0.0, 0.0);
+  //if (angle_test) met4vector.SetPxPyPzE(neutrino_Gen.Px(), neutrino_Gen.Py(), 0.0, neutrino_Gen.Et());//ONLY A TEST
  
   met_small = 0;
-  undefined_met = 0;
 	
   METzCalculator calc;
-  calc.SetMET(met4vector);
+  calc.SetMET(met_px, met_py);
   calc.SetLepton(lepton);
-  calc.SetTruthInfo(neutrino_gen);
-  if (angle_test) calc.SetLepton(lepton_gen);//ONLY A TEST
+  calc.SetTruthInfo(neutrino_Gen.Pz());
+  //if (angle_test) calc.SetLepton(lepton_Gen);//ONLY A TEST
 
-  if (abs(reco_lep_generation) == 1) calc.SetLeptonType("electron");// std::cout << "DEBUGGING: lepton is an electron.\n";}
-  if (abs(reco_lep_generation) == 2) calc.SetLeptonType("muon");// std::cout << "DEBUGGING: lepton is a muon.\n";}
+  calc.SetLeptonType(reco_lep_generation);// std::cout << "DEBUGGING: lepton is an electron.\n";}
+  //if (abs(reco_lep_generation) == 2) calc.SetLeptonType("muon");// std::cout << "DEBUGGING: lepton is a muon.\n";}
 
-  Double_t the_mass = lepton.M(); //ONLY FOR A TEST; COMMENTED OUT FOR A FURTHER TEST
+  Double_t the_mass = 9.0;//lepton.M(); //ONLY FOR A TEST; COMMENTED OUT FOR A FURTHER TEST
 
   if (abs(reco_lep_generation) == 1) the_mass = el_mass;
   if (abs(reco_lep_generation) == 2) the_mass = mu_mass;
  
   calc.SetWmass(Wmass);
-  TLorentzVector wlep_gen = lepton_gen + neutrino_gen;//JUST TO TEST
+  TLorentzVector wlep_gen = lepton_Gen + neutrino_Gen;//JUST TO TEST
   //Double_t wgenmass = wlep_gen.M();//JUST TO TEST
-  if (angle_test) calc.SetWmass(wlep_gen.M());
+  //if (angle_test) calc.SetWmass(wlep_gen.M());
 
-  if (!angle_test) calc.SetJets(subjet0, subjet1);
-  if (angle_test)  calc.SetJets(quark_gen, antiquark_gen);
+  calc.SetJets(subjet0, subjet1);
+  //if (angle_test)  calc.SetJets(quark_gen, antiquark_gen);
 
-  calc.SetnMass(0.0);
-  Double_t neu_gen_mass = neutrino_gen.M();
-  if (angle_test && (neu_gen_mass < 0.0 || the_mass < 0.0)) bad_event = true;
-  if (angle_test) calc.SetnMass(neu_gen_mass);
+  //calc.SetnMass(0.0);
+  //Double_t neu_gen_mass = neutrino_Gen.M();
+  //if (angle_test && (neu_gen_mass < 0.0 || the_mass < 0.0)) bad_event = true;
+  //if (angle_test) calc.SetnMass(neu_gen_mass);
   
   //if (gen_lep_generation < 0) wgenmass = Wplus_gen.M();//JUST TO TEST
-  // if (gen_lep_generation > 0) wgenmass = Wminus_gen.M();//JUST TO TEST
+  //if (gen_lep_generation > 0) wgenmass = Wminus_gen.M();//JUST TO TEST
 
   Double_t met_pz = calc.Calculate(7);
   Double_t other_met_pz = calc.getOther();
@@ -2559,42 +3002,123 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   Double_t fill_pz5 = calc.Calculate(5);
   Double_t fill_pz6 = calc.Calculate(6);
   Double_t fill_pz7 = calc.Calculate(7);
- 
-      
-  if (calc.IsComplex()) imaginary_neutrino = 1;
-  else imaginary_neutrino = 0;
   
-  if (met_pz != met_pz) {bad_event = true;}// std::cout << "BAD EVENT: met pz not well defined.\n"; undefined_met = 1;}
-  //else {}
+  if (calc.IsComplex()) imaginary_neutrino = 1;//{imaginary_neutrino = 1; std::cout << "NTUPLIZER: imaginary part is " << calc.ipart() << std::endl;}
+  else imaginary_neutrino = 0;
+
+  Double_t other_met_px = met_px;
+  Double_t other_met_py = met_py;
+
+            //THIS IS THE OLD WAY OF DOING THINGS; CHANGE
+  correctedWmass = Wmass;
+  //if (imaginary_neutrino == 1 && METcorrect)
+  //{
+  //calc.SetWmass(wlep_gen.M());
+  //met_pz = calc.Calculate(7);
+  //}
+  
+  if (imaginary_neutrino == 1 && METcorrect)
+    {
+      METxyCorrector corr;
+      corr.setVocal(false);
+      corr.initialMET(met_px, met_py);
+      corr.setLepton(lepton);
+      corr.SetLeptonType(reco_lep_generation);
+      corr.initialWmass(Wmass);
+      
+      met_px = corr.Correct(1);
+      met_py = corr.Correct(2);
+      //correctedWmass = corr.Correct(0);
+      //correctedWmass = wlep_gen.M();
+
+      //back to METzCalculator
+      calc.SetMET(met_px, met_py);
+      calc.SetWmass(correctedWmass);
+      met_pz = calc.Calculate(7);
+    }
+  
+  /*
+  if (imaginary_neutrino == 1 && METcorrect)
+    {
+      Double_t Wmass_values[25];
+      Double_t met_px_values[25];
+      Double_t met_py_values[25];
+      Double_t xi_squared[25];
+      for (int i = -4; i <= 20; i++) Wmass_values[i + 4] = Wmass + 5.0*i;
+
+      METxyCorrector corr;
+      corr.setVocal(false);
+      corr.initialMET(met_px, met_py);
+      corr.setLepton(lepton);
+      corr.SetLeptonType(reco_lep_generation);
+
+      for (int i = 0; i < 25; i++)
+	{
+	  corr.initialWmass(Wmass_values[i]);
+	  met_px_values[i] = corr.Correct(1);
+	  met_py_values[i] = corr.Correct(2);
+
+	  Double_t met_error_sqrd = (met_px_values[i] - met_px)*(met_px_values[i] - met_px) + (met_py_values[i] - met_py)*(met_py_values[i] - met_py);
+	  Double_t W_error_sqrd = (Wmass - Wmass_values[i])*(Wmass - Wmass_values[i]);
+
+	  xi_squared[i] = met_error_sqrd/met_unc_sqrd + W_error_sqrd/W_unc_sqrd;
+
+	}
+
+      Double_t minimum = 1000.0;
+     
+      for (int i = 0; i < 25; i++)
+	{
+	  std::cout << "xi sqared is " << xi_squared[i] << std::endl;
+	  if (minimum > xi_squared[i])
+	    {
+	      minimum = xi_squared[i];
+	      met_px = met_px_values[i];
+	      met_py = met_py_values[i];
+	      correctedWmass = Wmass_values[i];
+	    }
+	}
+    }
+  */
+  
+  //if (calc.IsComplex() && METcorrect)
+  //{
+  //std::cout << "NTUPLIZER: MET correction not completely successful. ";
+  //std::cout << "imaginary part is " << calc.ipart() << std::endl;  
+  //}
+  //if (imaginary_neutrino == 1 && !calc.IsComplex() && METcorrect) std::cout << "NTUPLIZER: MET correction suceeded.\n";
+  
+      
+  if (met_pz != met_pz) {std::cout << "met pz not a number.\n"; exit(42);}
  
-  reco_konstant = Wmass * Wmass - the_mass * the_mass + 2.0 * (lepton.Px() * met4vector.Px() + lepton.Py() * met4vector.Py());
-  gen_konstant = wlep_gen.M() * wlep_gen.M() - lepton_gen.M() * lepton_gen.M() + 2.0*(lepton_gen.Px()*met4vector.Px() + lepton_gen.Py()*met4vector.Py()) - neu_gen_mass*neu_gen_mass;//ONLY FOR A TEST
+  reco_konstant = correctedWmass * correctedWmass - the_mass * the_mass + 2.0 * (lepton.Px() * met_px + lepton.Py() * met_py);
+  other_reco_konstant = Wmass * Wmass - the_mass * the_mass + 2.0 * (lepton.Px() * other_met_px + lepton.Py() * other_met_py);
+
+  gen_konstant = wlep_gen.M() * wlep_gen.M() - lepton_Gen.M() * lepton_Gen.M() + 2.0*(lepton_Gen.Px()*met_px + lepton_Gen.Py()*met_py);// - neu_gen_mass*neu_gen_mass;//ONLY FOR A TEST
 
   Double_t met_e = (met_pz * lepton.Pz() + 0.5 * reco_konstant) / lepton.E();
-  Double_t other_met_e = (other_met_pz * lepton.Pz() + 0.5 * reco_konstant) / lepton.E();
+  Double_t other_met_e = (other_met_pz * lepton.Pz() + 0.5 * other_reco_konstant) / lepton.E();
 
-  if (angle_test) met_e = (met_pz * lepton_gen.Pz() + 0.5 * gen_konstant) / lepton_gen.E();//ONLY TO TEST
-  if (angle_test) other_met_e = (other_met_pz * lepton_gen.Pz() + 0.5 * gen_konstant) / lepton_gen.E();//ONLY TO TEST
+  //if (angle_test) met_e = (met_pz * lepton_Gen.Pz() + 0.5 * gen_konstant) / lepton_Gen.E();//ONLY TO TEST
+  //if (angle_test) other_met_e = (other_met_pz * lepton_Gen.Pz() + 0.5 * gen_konstant) / lepton_Gen.E();//ONLY TO TEST
   
-  if (!bad_event) met4vector.SetPxPyPzE(met_px, met_py, met_pz, met_e);
-  if (!bad_event) other_met4vector.SetPxPyPzE(met_px, met_py, other_met_pz, other_met_e);
+  met4vector.SetPxPyPzE(met_px, met_py, met_pz, met_e);
+  other_met4vector.SetPxPyPzE(other_met_px, other_met_py, other_met_pz, other_met_e);
 
-  if (angle_test && !bad_event) met4vector.SetPxPyPzE(neutrino_gen.Px(), neutrino_gen.Py(), met_pz, met_e); //JUST TO TEST
-  if (angle_test && !bad_event) other_met4vector.SetPxPyPzE(neutrino_gen.Px(), neutrino_gen.Py(), other_met_pz, other_met_e); //JUST TO TEST
+  //if (angle_test) met4vector.SetPxPyPzE(neutrino_Gen.Px(), neutrino_Gen.Py(), met_pz, met_e); //JUST TO TEST
+  //if (angle_test) other_met4vector.SetPxPyPzE(neutrino_Gen.Px(), neutrino_Gen.Py(), other_met_pz, other_met_e); //JUST TO TEST
   
   if (met4vector.Et() < missing_et_cutoff) {bad_event = true; missing_et_cutoff_count++;}
   //if (met4vector.M() < -0.0) {bad_event = true;}
 
-  Double_t calculated_mass = met4vector.M();
-
-  if (!bad_event && talking && calculated_mass != 0.0) 
+  if (!bad_event && talking && met4vector.M() != 0.0) 
     {
       outfile << "input is nu x: " << met4vector.Px() << " nu y: " << met4vector.Py() << " nu z: " << met4vector.Pz() << " nu e: " << met4vector.E() << std::endl;
       outfile << "input is lep x: " << lepton.Px() << " lep y: " << lepton.Py() << " lep z: " << lepton.Pz() << " lep e: " << lepton.E() << std::endl;
       outfile << "lepton mass = " << the_mass << std::endl;
       outfile << "calculated pz is " << met_pz << " and calculated energy is " << met_e << std::endl;
       outfile << "or perhaps calculated pz is " << other_met_pz << " and calculated energy is " << other_met_e << std::endl;
-      outfile << "calculated mass is " << calculated_mass << std::endl;
+      outfile << "calculated mass is " << met4vector.M() << std::endl;
       
       //std::cout << "BAD EVENT: reco lep generation is: " << reco_lep_generation << std::endl;
       //std::cout << "BAD EVENT: electron mark is: " << el_mark << std::endl;
@@ -2661,12 +3185,31 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //                    |___/                                        
 
   if (bad_event) return; //{std::cout << "bad event reached gauge bosons.\n"; return;}
-   if (bad_event) std::cout << "you shouldn't be seeing this.";
+  if (bad_event) std::cout << "you shouldn't be seeing this.";
 
-  TLorentzVector Whad;
-  Whad.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
+  const Double_t Wlep_pt_cutoff = 200.0;
+  const Double_t Wlep_jet_phi_min = 2.0;
+
+  TLorentzVector Vhad;
+  Vhad.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
   TLorentzVector Wlep;
   Wlep.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
+
+  TLorentzVector other_Wlep;
+  other_Wlep.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
+
+  TLorentzVector WVreco;
+  WVreco.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
+
+  TLorentzVector other_WVreco;
+  other_WVreco.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
+
+
+  TLorentzVector WVgen;
+  WVgen.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
+
+  TLorentzVector WVgen_reco;
+  WVgen_reco.SetPxPyPzE(-99.9,-99.9,-99.9,-99.9);
 
   Int_t Wlep_set = 0;
   
@@ -2675,6 +3218,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       //if (muon_value_set == 0) {std::cout << "you screwed up again.\n"; exit(23);}
       Wlep_set = 2;
       Wlep = muon + met4vector;
+      other_Wlep = muon + other_met4vector;
     }
   //else if (muon_value_set == 1) {std::cout << "you screwed up again.\n"; exit(24);}
   
@@ -2683,22 +3227,43 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       //if (electron_value_set == 0) {std::cout << "you screwed up again.\n"; exit(25);}
       Wlep_set = 1;
       Wlep = electron + met4vector;
+      other_Wlep = electron + other_met4vector;
     }
   //else if (electron_value_set == 1) {std::cout << "you screwed up again.\n"; exit(26);}
   
-  //if (merged_event == 0) Whad = jet0 + jet1;
-  //if (merged_event == 1)
-  Whad = subjet0 + subjet1;
+  if (merged_event == 0) Vhad = jet0 + jet1;
+  if (merged_event == 1) Vhad = subjet0 + subjet1;
 
+  if (Wlep.Pt() > Wlep_pt_cutoff) { } //bad_event = true;
+
+  WVreco = Wlep + Vhad;
+  other_WVreco = other_Wlep + Vhad;
+  if (WVreco.M() < 900.0) { } //bad_event = true;
+
+  if (WZevt == 0) WVgen = Wplus_gen + Wminus_gen;
   
-  //MARKER: TRUTH MATCHING STUFF IS GETTING IN THE WAY
+  else if (WZevt == 1)
+    {
+      if (gen_lep_generation > 0) WVgen = Wminus_gen + Zneutral_gen;
+      if (gen_lep_generation < 0) WVgen = Wplus_gen + Zneutral_gen;
+    }
+
+  else std::cout << "WZevt variable not set.\n";
+
+  WVgen_reco = neutrino_Gen + lepton_Gen + quark_gen + antiquark_gen;
+
+  if (lepton.DeltaR(jet0) < lep_jet_R_min) bad_event = true;
+  if (met4vector.DeltaPhi(jet0) < MET_jet_phi_min) { } //bad_event = true;
+  if (Wlep.DeltaPhi(jet0) < Wlep_jet_phi_min) { } //bad_event = true;
+
+  //MARKER: OLD TRUTH MATCHING STUFF IS GETTING IN THE WAY
   // _____           _   _       __  __       _       _     _             
   //|_   _| __ _   _| |_| |__   |  \/  | __ _| |_ ___| |__ (_)_ __   __ _ 
   //  | || '__| | | | __| '_ \  | |\/| |/ _` | __/ __| '_ \| | '_ \ / _` |
   //  | || |  | |_| | |_| | | | | |  | | (_| | || (__| | | | | | | | (_| |
   //  |_||_|   \__,_|\__|_| |_| |_|  |_|\__,_|\__\___|_| |_|_|_| |_|\__, |
   //                                                                |___/ 
-#if 0
+  /*
   //////////////////////////////////////TIME TO TEST WMASS FIT
   //
   min_mass_diff = 1000.0;
@@ -2803,8 +3368,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       subcounter1 = -1;
       }
   /////////////////////////////////////////
-#endif
-  
+  */
   //MARKER RHO
   //
   //
@@ -3458,8 +4022,8 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   if (reco_lep_generation > 0) calculateAngles(lepton, met4vector, subjet0, subjet1, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);//changing temporarily to gen
   if (reco_lep_generation < 0) calculateAngles(met4vector, lepton, subjet0, subjet1, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);   
 
-  if (reco_lep_generation > 0 && angle_test) calculateAngles(lepton_gen, met4vector, quark_gen, antiquark_gen, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);//changing temporarily to gen
-  if (reco_lep_generation < 0 && angle_test) calculateAngles(met4vector, lepton_gen, quark_gen, antiquark_gen, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);   
+  //if (reco_lep_generation > 0 && angle_test) calculateAngles(lepton_Gen, met4vector, quark_gen, antiquark_gen, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);//changing temporarily to gen
+  //if (reco_lep_generation < 0 && angle_test) calculateAngles(met4vector, lepton_Gen, quark_gen, antiquark_gen, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);   
 
   costheta1 = d_costheta1;
   costheta2 = d_costheta2;
@@ -3471,8 +4035,8 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   if (reco_lep_generation > 0) calculateAngles(lepton, other_met4vector, subjet0, subjet1, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);
   if (reco_lep_generation < 0) calculateAngles(other_met4vector, lepton, subjet0, subjet1, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);
 
-  if (reco_lep_generation > 0 && angle_test) calculateAngles(lepton_gen, other_met4vector, quark_gen, antiquark_gen, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);
-  if (reco_lep_generation < 0 && angle_test) calculateAngles(other_met4vector, lepton_gen, quark_gen, antiquark_gen, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);
+  //if (reco_lep_generation > 0 && angle_test) calculateAngles(lepton_Gen, other_met4vector, quark_gen, antiquark_gen, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);
+  //if (reco_lep_generation < 0 && angle_test) calculateAngles(other_met4vector, lepton_Gen, quark_gen, antiquark_gen, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);
 
   other_costheta1 = d_costheta1;
   other_costheta2 = d_costheta2;
@@ -3535,8 +4099,8 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   if (other_phi1 != other_phi1) other_phi1 = 4.0;
   if (other_phi2 != other_phi2) other_phi2 = 4.0;
 
-  if (gen_lep_generation  > 0) calculateAngles(lepton_gen, neutrino_gen, quark_gen, antiquark_gen, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);
-  if (gen_lep_generation  < 0) calculateAngles(neutrino_gen, lepton_gen, quark_gen, antiquark_gen, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);
+  if (gen_lep_generation  > 0) calculateAngles(lepton_Gen, neutrino_Gen, quark_gen, antiquark_gen, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);
+  if (gen_lep_generation  < 0) calculateAngles(neutrino_Gen, lepton_Gen, quark_gen, antiquark_gen, d_costheta1, d_costheta2, d_phi, d_costhetastar, d_phi1, d_phi2);
 
   costheta1_gen = d_costheta1;
   costheta2_gen = d_costheta2;
@@ -3565,10 +4129,11 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   */
   //if (phi == phi && phi2 == phi2 && phi1 == phi1 && costheta1 == costheta1 && costheta2 == costheta2 && costhetastar == costhetastar) bad_event = true;
     
-   if (costheta1 == 2.0 || costheta2 == 2.0 || costhetastar == 2.0 || phi == 4.0 || phi1 == 4.0 || phi2 == 4.0) bad_event = true;
+   //if (costheta1 == 2.0 || costheta2 == 2.0 || costhetastar == 2.0 || phi == 4.0 || phi1 == 4.0 || phi2 == 4.0) bad_event = true;
 
+   /*/INTERMEDIATE STEPS
   // 
-  // MARKER INTERMEDIATE
+  // MARKER: INTERMEDIATE
   //   _       _                               _ _       _       
   //  (_)_ __ | |_ ___ _ __ _ __ ___   ___  __| (_) __ _| |_ ___ 
   //  | | '_ \| __/ _ \ '__| '_ ` _ \ / _ \/ _` | |/ _` | __/ _ \ |
@@ -3576,166 +4141,193 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //  |_|_| |_|\__\___|_|  |_| |_| |_|\___|\__,_|_|\__,_|\__\___|
   //
     
-  
-  //if (mu_event == 1 && el_event == 0)
-  //{
-  if (reco_lep_generation > 0) intermediate_steps(lepton, met4vector, subjet0, subjet1, d_leptons_in_lep_px, d_leptons_in_lep_py, d_leptons_in_lep_pz, d_partons_in_lep_px, d_partons_in_lep_py, d_partons_in_lep_pz, d_parton1_in_lep_px, d_parton2_in_lep_px, d_parton1_in_lep_py, d_parton2_in_lep_py, d_parton1_in_lep_pz, d_parton2_in_lep_pz, d_lepton1_in_lep_px, d_lepton1_in_lep_py, d_lepton1_in_lep_pz, d_lepton1_dotted_x, d_lepton1_dotted_y, d_lepton1_dotted_z, d_leptons_in_had_px, d_leptons_in_had_py, d_leptons_in_had_pz, d_lepton1_in_had_px, d_lepton1_in_had_py, d_lepton1_in_had_pz, d_lepton2_in_had_px, d_lepton2_in_had_py, d_lepton2_in_had_pz, d_parton1_in_had_px, d_parton1_in_had_py, d_parton1_in_had_pz, d_parton1_dotted_x, d_parton1_dotted_y, d_parton1_dotted_z, d_complicated1_px, d_complicated1_py, d_complicated1_pz, d_complicated2_px, d_complicated2_py, d_complicated2_pz, d_lepton_sumWWframe_X, d_lepton_sumWWframe_Y, d_lepton_sumWWframe_Z, d_lepton1WWframe_X, d_lepton1WWframe_Y, d_lepton1WWframe_Z, d_parton_sumWWframe_X, d_parton_sumWWframe_Y, d_parton_sumWWframe_Z, d_parton1WWframe_X, d_parton1WWframe_Y, d_parton1WWframe_Z, d_costhetastar, d_costheta1, d_phi, d_costheta2, d_phi1, d_phi2, d_boostWWframe_X, d_boostWWframe_Y, d_boostWWframe_Z, d_boostWlep_X, d_boostWlep_Y, d_boostWlep_Z, d_boostWhad_X, d_boostWhad_Y, d_boostWhad_Z);
+ 
+   if (reco_lep_generation > 0) intermediate_steps(lepton, met4vector, subjet0, subjet1, imaginary_neutrino, d_leptons_in_lep_px, d_leptons_in_lep_py, d_leptons_in_lep_pz, d_partons_in_lep_px, d_partons_in_lep_py, d_partons_in_lep_pz, d_parton1_in_lep_px, d_parton2_in_lep_px, d_parton1_in_lep_py, d_parton2_in_lep_py, d_parton1_in_lep_pz, d_parton2_in_lep_pz, d_lepton1_in_lep_px, d_lepton1_in_lep_py, d_lepton1_in_lep_pz, d_lepton1_dotted_x, d_lepton1_dotted_y, d_lepton1_dotted_z, d_leptons_in_had_px, d_leptons_in_had_py, d_leptons_in_had_pz, d_lepton1_in_had_px, d_lepton1_in_had_py, d_lepton1_in_had_pz, d_lepton2_in_had_px, d_lepton2_in_had_py, d_lepton2_in_had_pz, d_parton1_in_had_px, d_parton1_in_had_py, d_parton1_in_had_pz, d_parton1_dotted_x, d_parton1_dotted_y, d_parton1_dotted_z, d_complicated1_px, d_complicated1_py, d_complicated1_pz, d_complicated2_px, d_complicated2_py, d_complicated2_pz, d_lepton_sumWWframe_X, d_lepton_sumWWframe_Y, d_lepton_sumWWframe_Z, d_lepton1WWframe_X, d_lepton1WWframe_Y, d_lepton1WWframe_Z, d_parton_sumWWframe_X, d_parton_sumWWframe_Y, d_parton_sumWWframe_Z, d_parton1WWframe_X, d_parton1WWframe_Y, d_parton1WWframe_Z, d_costhetastar, d_costheta1, d_phi, d_costheta2, d_phi1, d_phi2, d_boostWWframe_X, d_boostWWframe_Y, d_boostWWframe_Z, d_boostWlep_X, d_boostWlep_Y, d_boostWlep_Z, d_boostWhad_X, d_boostWhad_Y, d_boostWhad_Z, d_xdotx, d_xdoty, d_xdotz, d_ydotx, d_ydoty, d_ydotz, d_zdotx, d_zdoty, d_zdotz, d_lepton1WWframe_UX, d_lepton1WWframe_UY, d_lepton1WWframe_UZ, d_lepton_sumWWframe_UX, d_lepton_sumWWframe_UY, d_lepton_sumWWframe_UZ, d_leptons_in_lep_px_good, d_leptons_in_lep_py_good, d_leptons_in_lep_pz_good, d_partons_in_lep_px_good, d_partons_in_lep_py_good, d_partons_in_lep_pz_good, d_parton1_in_lep_px_good, d_parton2_in_lep_px_good, d_parton1_in_lep_py_good, d_parton2_in_lep_py_good, d_parton1_in_lep_pz_good, d_parton2_in_lep_pz_good, d_lepton1_in_lep_px_good, d_lepton1_in_lep_py_good, d_lepton1_in_lep_pz_good, d_leptons_in_had_px_good, d_leptons_in_had_py_good, d_leptons_in_had_pz_good, d_lepton1_in_had_px_good, d_lepton1_in_had_py_good, d_lepton1_in_had_pz_good, d_lepton2_in_had_px_good, d_lepton2_in_had_py_good, d_lepton2_in_had_pz_good, d_parton1_in_had_px_good, d_parton1_in_had_py_good, d_parton1_in_had_pz_good, d_lepton_sumWWframe_X_good, d_lepton_sumWWframe_Y_good, d_lepton_sumWWframe_Z_good, d_lepton1WWframe_X_good, d_lepton1WWframe_Y_good, d_lepton1WWframe_Z_good, d_parton_sumWWframe_X_good, d_parton_sumWWframe_Y_good, d_parton_sumWWframe_Z_good, d_parton1WWframe_X_good, d_parton1WWframe_Y_good, d_parton1WWframe_Z_good);
       
-  if (reco_lep_generation < 0) intermediate_steps(met4vector, lepton, subjet0, subjet1, d_leptons_in_lep_px, d_leptons_in_lep_py, d_leptons_in_lep_pz, d_partons_in_lep_px, d_partons_in_lep_py, d_partons_in_lep_pz, d_parton1_in_lep_px, d_parton2_in_lep_px, d_parton1_in_lep_py, d_parton2_in_lep_py, d_parton1_in_lep_pz, d_parton2_in_lep_pz, d_lepton1_in_lep_px, d_lepton1_in_lep_py, d_lepton1_in_lep_pz, d_lepton1_dotted_x, d_lepton1_dotted_y, d_lepton1_dotted_z, d_leptons_in_had_px, d_leptons_in_had_py, d_leptons_in_had_pz, d_lepton1_in_had_px, d_lepton1_in_had_py, d_lepton1_in_had_pz, d_lepton2_in_had_px, d_lepton2_in_had_py, d_lepton2_in_had_pz, d_parton1_in_had_px, d_parton1_in_had_py, d_parton1_in_had_pz, d_parton1_dotted_x, d_parton1_dotted_y, d_parton1_dotted_z, d_complicated1_px, d_complicated1_py, d_complicated1_pz, d_complicated2_px, d_complicated2_py, d_complicated2_pz, d_lepton_sumWWframe_X, d_lepton_sumWWframe_Y, d_lepton_sumWWframe_Z, d_lepton1WWframe_X, d_lepton1WWframe_Y, d_lepton1WWframe_Z, d_parton_sumWWframe_X, d_parton_sumWWframe_Y, d_parton_sumWWframe_Z, d_parton1WWframe_X, d_parton1WWframe_Y, d_parton1WWframe_Z, d_costhetastar, d_costheta1, d_phi, d_costheta2, d_phi1, d_phi2, d_boostWWframe_X, d_boostWWframe_Y, d_boostWWframe_Z, d_boostWlep_X, d_boostWlep_Y, d_boostWlep_Z, d_boostWhad_X, d_boostWhad_Y, d_boostWhad_Z);
-   
-  leptons_in_lep_px = d_leptons_in_lep_px;
-  leptons_in_lep_py = d_leptons_in_lep_py;
-  leptons_in_lep_pz = d_leptons_in_lep_pz;
-  partons_in_lep_px = d_partons_in_lep_px;
-  partons_in_lep_py = d_partons_in_lep_py;
-  partons_in_lep_pz = d_partons_in_lep_pz;
-  parton1_in_lep_px = d_parton1_in_lep_px;
-  parton2_in_lep_px = d_parton2_in_lep_px;
-  parton1_in_lep_py = d_parton1_in_lep_py;
-  parton2_in_lep_py = d_parton2_in_lep_py;
-  parton1_in_lep_pz = d_parton1_in_lep_pz;
-  parton2_in_lep_pz = d_parton2_in_lep_pz;
-  lepton1_in_lep_px = d_lepton1_in_lep_px;
-  lepton1_in_lep_py = d_lepton1_in_lep_py;
-  lepton1_in_lep_pz = d_lepton1_in_lep_pz;
-  lepton1_dotted_x = d_lepton1_dotted_x;
-  lepton1_dotted_y = d_lepton1_dotted_y;
-  lepton1_dotted_z = d_lepton1_dotted_z;
-  leptons_in_had_px = d_leptons_in_had_px;
-  leptons_in_had_py = d_leptons_in_had_py;
-  leptons_in_had_pz = d_leptons_in_had_pz;
-  lepton1_in_had_px = d_lepton1_in_had_px;
-  lepton1_in_had_py = d_lepton1_in_had_py;
-  lepton1_in_had_pz = d_lepton1_in_had_pz;
-  lepton2_in_had_px = d_lepton2_in_had_px;
-  lepton2_in_had_py = d_lepton2_in_had_py;
-  lepton2_in_had_pz = d_lepton2_in_had_pz;
-  parton1_in_had_px = d_parton1_in_had_px;
-  parton1_in_had_py = d_parton1_in_had_py;
-  parton1_in_had_pz = d_parton1_in_had_pz;
-  parton1_dotted_x = d_parton1_dotted_x;
-  parton1_dotted_y = d_parton1_dotted_y;
-  parton1_dotted_z = d_parton1_dotted_z;
-  complicated1_px = d_complicated1_px;
-  complicated1_py = d_complicated1_py;
-  complicated1_pz = d_complicated1_pz;
-  complicated2_px = d_complicated2_px;
-  complicated2_py = d_complicated2_py;
-  complicated2_pz = d_complicated2_pz;
-  lepton_sumWWframe_X = d_lepton_sumWWframe_X;
-  lepton_sumWWframe_Y = d_lepton_sumWWframe_Y;
-  lepton_sumWWframe_Z = d_lepton_sumWWframe_Z;
-  lepton1WWframe_X = d_lepton1WWframe_X;
-  lepton1WWframe_Y = d_lepton1WWframe_Y;
-  lepton1WWframe_Z = d_lepton1WWframe_Z;
-  parton_sumWWframe_X = d_parton_sumWWframe_X;
-  parton_sumWWframe_Y = d_parton_sumWWframe_Y;
-  parton_sumWWframe_Z = d_parton_sumWWframe_Z;
-  parton1WWframe_X = d_parton1WWframe_X;
-  parton1WWframe_Y = d_parton1WWframe_Y;
-  parton1WWframe_Z = d_parton1WWframe_Z;
-  /*
-    costheta1 = d_costheta1;
-    costheta2 = d_costheta2;
-    costhetastar = d_costhetastar;
-    phi = d_phi;
-    phi1 = d_phi1;
-    phi2 = d_phi2;
-  */
-  boostWWframe_X = d_boostWWframe_X;
-  boostWWframe_Y = d_boostWWframe_Y;
-  boostWWframe_Z = d_boostWWframe_Z;
-  boostWlep_X = d_boostWlep_X;
-  boostWlep_Y = d_boostWlep_Y;
-  boostWlep_Z = d_boostWlep_Z;
-  boostWhad_X = d_boostWhad_X;
-  boostWhad_Y = d_boostWhad_Y;
-  boostWhad_Z = d_boostWhad_Z;
-
+   if (reco_lep_generation < 0) intermediate_steps(met4vector, lepton, subjet0, subjet1, imaginary_neutrino, d_leptons_in_lep_px, d_leptons_in_lep_py, d_leptons_in_lep_pz, d_partons_in_lep_px, d_partons_in_lep_py, d_partons_in_lep_pz, d_parton1_in_lep_px, d_parton2_in_lep_px, d_parton1_in_lep_py, d_parton2_in_lep_py, d_parton1_in_lep_pz, d_parton2_in_lep_pz, d_lepton1_in_lep_px, d_lepton1_in_lep_py, d_lepton1_in_lep_pz, d_lepton1_dotted_x, d_lepton1_dotted_y, d_lepton1_dotted_z, d_leptons_in_had_px, d_leptons_in_had_py, d_leptons_in_had_pz, d_lepton1_in_had_px, d_lepton1_in_had_py, d_lepton1_in_had_pz, d_lepton2_in_had_px, d_lepton2_in_had_py, d_lepton2_in_had_pz, d_parton1_in_had_px, d_parton1_in_had_py, d_parton1_in_had_pz, d_parton1_dotted_x, d_parton1_dotted_y, d_parton1_dotted_z, d_complicated1_px, d_complicated1_py, d_complicated1_pz, d_complicated2_px, d_complicated2_py, d_complicated2_pz, d_lepton_sumWWframe_X, d_lepton_sumWWframe_Y, d_lepton_sumWWframe_Z, d_lepton1WWframe_X, d_lepton1WWframe_Y, d_lepton1WWframe_Z, d_parton_sumWWframe_X, d_parton_sumWWframe_Y, d_parton_sumWWframe_Z, d_parton1WWframe_X, d_parton1WWframe_Y, d_parton1WWframe_Z, d_costhetastar, d_costheta1, d_phi, d_costheta2, d_phi1, d_phi2, d_boostWWframe_X, d_boostWWframe_Y, d_boostWWframe_Z, d_boostWlep_X, d_boostWlep_Y, d_boostWlep_Z, d_boostWhad_X, d_boostWhad_Y, d_boostWhad_Z, d_xdotx, d_xdoty, d_xdotz, d_ydotx, d_ydoty, d_ydotz, d_zdotx, d_zdoty, d_zdotz, d_lepton1WWframe_UX, d_lepton1WWframe_UY, d_lepton1WWframe_UZ, d_lepton_sumWWframe_UX, d_lepton_sumWWframe_UY, d_lepton_sumWWframe_UZ, d_leptons_in_lep_px_good, d_leptons_in_lep_py_good, d_leptons_in_lep_pz_good, d_partons_in_lep_px_good, d_partons_in_lep_py_good, d_partons_in_lep_pz_good, d_parton1_in_lep_px_good, d_parton2_in_lep_px_good, d_parton1_in_lep_py_good, d_parton2_in_lep_py_good, d_parton1_in_lep_pz_good, d_parton2_in_lep_pz_good, d_lepton1_in_lep_px_good, d_lepton1_in_lep_py_good, d_lepton1_in_lep_pz_good, d_leptons_in_had_px_good, d_leptons_in_had_py_good, d_leptons_in_had_pz_good, d_lepton1_in_had_px_good, d_lepton1_in_had_py_good, d_lepton1_in_had_pz_good, d_lepton2_in_had_px_good, d_lepton2_in_had_py_good, d_lepton2_in_had_pz_good, d_parton1_in_had_px_good, d_parton1_in_had_py_good, d_parton1_in_had_pz_good, d_lepton_sumWWframe_X_good, d_lepton_sumWWframe_Y_good, d_lepton_sumWWframe_Z_good, d_lepton1WWframe_X_good, d_lepton1WWframe_Y_good, d_lepton1WWframe_Z_good, d_parton_sumWWframe_X_good, d_parton_sumWWframe_Y_good, d_parton_sumWWframe_Z_good, d_parton1WWframe_X_good, d_parton1WWframe_Y_good, d_parton1WWframe_Z_good);
     
-  //}
-  /*
-    else if (mu_event == 0 && el_event == 1)
-    {
-    if (reco_lep_generation > 0) intermediate_steps(electron, met4vector, subjet0, subjet1, d_leptons_in_lep_px, d_leptons_in_lep_py, d_leptons_in_lep_pz, d_partons_in_lep_px, d_partons_in_lep_py, d_partons_in_lep_pz, d_parton1_in_lep_px, d_parton2_in_lep_px, d_parton1_in_lep_py, d_parton2_in_lep_py, d_parton1_in_lep_pz, d_parton2_in_lep_pz, d_lepton1_in_lep_px, d_lepton1_in_lep_py, d_lepton1_in_lep_pz, d_lepton1_dotted_x, d_lepton1_dotted_y, d_lepton1_dotted_z, d_leptons_in_had_px, d_leptons_in_had_py, d_leptons_in_had_pz, d_lepton1_in_had_px, d_lepton1_in_had_py, d_lepton1_in_had_pz, d_lepton2_in_had_px, d_lepton2_in_had_py, d_lepton2_in_had_pz, d_parton1_in_had_px, d_parton1_in_had_py, d_parton1_in_had_pz, d_parton1_dotted_x, d_parton1_dotted_y, d_parton1_dotted_z, d_complicated1_px, d_complicated1_py, d_complicated1_pz, d_complicated2_px, d_complicated2_py, d_complicated2_pz, d_lepton_sumWWframe_X, d_lepton_sumWWframe_Y, d_lepton_sumWWframe_Z, d_lepton1WWframe_X, d_lepton1WWframe_Y, d_lepton1WWframe_Z, d_parton_sumWWframe_X, d_parton_sumWWframe_Y, d_parton_sumWWframe_Z, d_parton1WWframe_X, d_parton1WWframe_Y, d_parton1WWframe_Z, d_costhetastar, d_costheta1, d_phi, d_costheta2, d_phi1, d_phi2, d_boostWWframe_X, d_boostWWframe_Y, d_boostWWframe_Z, d_boostWlep_X, d_boostWlep_Y, d_boostWlep_Z, d_boostWhad_X, d_boostWhad_Y, d_boostWhad_Z);
-      
-    if (reco_lep_generation < 0) intermediate_steps(met4vector, electron, subjet0, subjet1, d_leptons_in_lep_px, d_leptons_in_lep_py, d_leptons_in_lep_pz, d_partons_in_lep_px, d_partons_in_lep_py, d_partons_in_lep_pz, d_parton1_in_lep_px, d_parton2_in_lep_px, d_parton1_in_lep_py, d_parton2_in_lep_py, d_parton1_in_lep_pz, d_parton2_in_lep_pz, d_lepton1_in_lep_px, d_lepton1_in_lep_py, d_lepton1_in_lep_pz, d_lepton1_dotted_x, d_lepton1_dotted_y, d_lepton1_dotted_z, d_leptons_in_had_px, d_leptons_in_had_py, d_leptons_in_had_pz, d_lepton1_in_had_px, d_lepton1_in_had_py, d_lepton1_in_had_pz, d_lepton2_in_had_px, d_lepton2_in_had_py, d_lepton2_in_had_pz, d_parton1_in_had_px, d_parton1_in_had_py, d_parton1_in_had_pz, d_parton1_dotted_x, d_parton1_dotted_y, d_parton1_dotted_z, d_complicated1_px, d_complicated1_py, d_complicated1_pz, d_complicated2_px, d_complicated2_py, d_complicated2_pz, d_lepton_sumWWframe_X, d_lepton_sumWWframe_Y, d_lepton_sumWWframe_Z, d_lepton1WWframe_X, d_lepton1WWframe_Y, d_lepton1WWframe_Z, d_parton_sumWWframe_X, d_parton_sumWWframe_Y, d_parton_sumWWframe_Z, d_parton1WWframe_X, d_parton1WWframe_Y, d_parton1WWframe_Z, d_costhetastar, d_costheta1, d_phi, d_costheta2, d_phi1, d_phi2, d_boostWWframe_X, d_boostWWframe_Y, d_boostWWframe_Z, d_boostWlep_X, d_boostWlep_Y, d_boostWlep_Z, d_boostWhad_X, d_boostWhad_Y, d_boostWhad_Z);
-   
-    leptons_in_lep_px = d_leptons_in_lep_px;
-    leptons_in_lep_py = d_leptons_in_lep_py;
-    leptons_in_lep_pz = d_leptons_in_lep_pz;
-    partons_in_lep_px = d_partons_in_lep_px;
-    partons_in_lep_py = d_partons_in_lep_py;
-    partons_in_lep_pz = d_partons_in_lep_pz;
-    parton1_in_lep_px = d_parton1_in_lep_px;
-    parton2_in_lep_px = d_parton2_in_lep_px;
-    parton1_in_lep_py = d_parton1_in_lep_py;
-    parton2_in_lep_py = d_parton2_in_lep_py;
-    parton1_in_lep_pz = d_parton1_in_lep_pz;
-    parton2_in_lep_pz = d_parton2_in_lep_pz;
-    lepton1_in_lep_px = d_lepton1_in_lep_px;
-    lepton1_in_lep_py = d_lepton1_in_lep_py;
-    lepton1_in_lep_pz = d_lepton1_in_lep_pz;
-    lepton1_dotted_x = d_lepton1_dotted_x;
-    lepton1_dotted_y = d_lepton1_dotted_y;
-    lepton1_dotted_z = d_lepton1_dotted_z;
-    leptons_in_had_px = d_leptons_in_had_px;
-    leptons_in_had_py = d_leptons_in_had_py;
-    leptons_in_had_pz = d_leptons_in_had_pz;
-    lepton1_in_had_px = d_lepton1_in_had_px;
-    lepton1_in_had_py = d_lepton1_in_had_py;
-    lepton1_in_had_pz = d_lepton1_in_had_pz;
-    lepton2_in_had_px = d_lepton2_in_had_px;
-    lepton2_in_had_py = d_lepton2_in_had_py;
-    lepton2_in_had_pz = d_lepton2_in_had_pz;
-    parton1_in_had_px = d_parton1_in_had_px;
-    parton1_in_had_py = d_parton1_in_had_py;
-    parton1_in_had_pz = d_parton1_in_had_pz;
-    parton1_dotted_x = d_parton1_dotted_x;
-    parton1_dotted_y = d_parton1_dotted_y;
-    parton1_dotted_z = d_parton1_dotted_z;
-    complicated1_px = d_complicated1_px; 
-    complicated1_py = d_complicated1_py;
-    complicated1_pz = d_complicated1_pz;
-    complicated2_px = d_complicated2_px;
-    complicated2_py = d_complicated2_py; 
-    complicated2_pz = d_complicated2_pz;
-    lepton_sumWWframe_X = d_lepton_sumWWframe_X;
-    lepton_sumWWframe_Y = d_lepton_sumWWframe_Y;
-    lepton_sumWWframe_Z = d_lepton_sumWWframe_Z;
-    lepton1WWframe_X = d_lepton1WWframe_X;
-    lepton1WWframe_Y = d_lepton1WWframe_Y;
-    lepton1WWframe_Z = d_lepton1WWframe_Z;
-    parton_sumWWframe_X = d_parton_sumWWframe_X;
-    parton_sumWWframe_Y = d_parton_sumWWframe_Y;
-    parton_sumWWframe_Z = d_parton_sumWWframe_Z;
-    parton1WWframe_X = d_parton1WWframe_X;
-    parton1WWframe_Y = d_parton1WWframe_Y;
-    parton1WWframe_Z = d_parton1WWframe_Z;
-    / *
-    costheta1 = d_costheta1;
-    costheta2 = d_costheta2;
-    costhetastar = d_costhetastar;
-    phi = d_phi;
-    phi1 = d_phi1;
-    phi2 = d_phi2;
-    * /
-    boostWWframe_X = d_boostWWframe_X;
-    boostWWframe_Y = d_boostWWframe_Y;
-    boostWWframe_Z = d_boostWWframe_Z;
-    boostWlep_X = d_boostWlep_X;
-    boostWlep_Y = d_boostWlep_Y;
-    boostWlep_Z = d_boostWlep_Z;
-    boostWhad_X = d_boostWhad_X;
-    boostWhad_Y = d_boostWhad_Y;
-    boostWhad_Z = d_boostWhad_Z;
-      
-    //if (reco_lep_generation > 0) intermediate_steps(electron, met4vector, subjet0, subjet1, );
-    //if (reco_lep_generation < 0) intermediate_steps(met4vector, electron, subjet0, subjet1, );
-
+   leptons_in_lep_px = d_leptons_in_lep_px;
+   leptons_in_lep_py = d_leptons_in_lep_py;
+   leptons_in_lep_pz = d_leptons_in_lep_pz;
   
-    }
-  */
+   partons_in_lep_px = d_partons_in_lep_px;
+   partons_in_lep_py = d_partons_in_lep_py;
+   partons_in_lep_pz = d_partons_in_lep_pz;
+  
+   parton1_in_lep_px = d_parton1_in_lep_px;
+   parton1_in_lep_py = d_parton1_in_lep_py;
+   parton1_in_lep_pz = d_parton1_in_lep_pz;
+ 
+   parton2_in_lep_px = d_parton2_in_lep_px;
+   parton2_in_lep_py = d_parton2_in_lep_py;
+   parton2_in_lep_pz = d_parton2_in_lep_pz;
+  
+   lepton1_in_lep_px = d_lepton1_in_lep_px;
+   lepton1_in_lep_py = d_lepton1_in_lep_py;
+   lepton1_in_lep_pz = d_lepton1_in_lep_pz;
+  
+   lepton1_dotted_x = d_lepton1_dotted_x;
+   lepton1_dotted_y = d_lepton1_dotted_y;
+   lepton1_dotted_z = d_lepton1_dotted_z;
+  
+   leptons_in_had_px = d_leptons_in_had_px;
+   leptons_in_had_py = d_leptons_in_had_py;
+   leptons_in_had_pz = d_leptons_in_had_pz;
+  
+   lepton1_in_had_px = d_lepton1_in_had_px;
+   lepton1_in_had_py = d_lepton1_in_had_py;
+   lepton1_in_had_pz = d_lepton1_in_had_pz;
+  
+   lepton2_in_had_px = d_lepton2_in_had_px;
+   lepton2_in_had_py = d_lepton2_in_had_py;
+   lepton2_in_had_pz = d_lepton2_in_had_pz;
+  
+   parton1_in_had_px = d_parton1_in_had_px;
+   parton1_in_had_py = d_parton1_in_had_py;
+   parton1_in_had_pz = d_parton1_in_had_pz;
+  
+   parton1_dotted_x = d_parton1_dotted_x;
+   parton1_dotted_y = d_parton1_dotted_y;
+   parton1_dotted_z = d_parton1_dotted_z;
+  
+   complicated1_px = d_complicated1_px;
+   complicated1_py = d_complicated1_py;
+   complicated1_pz = d_complicated1_pz;
+  
+   complicated2_px = d_complicated2_px;
+   complicated2_py = d_complicated2_py;
+   complicated2_pz = d_complicated2_pz;
+  
+   lepton_sumWWframe_X = d_lepton_sumWWframe_X;
+   lepton_sumWWframe_Y = d_lepton_sumWWframe_Y;
+   lepton_sumWWframe_Z = d_lepton_sumWWframe_Z;
+  
+   lepton1WWframe_X = d_lepton1WWframe_X;
+   lepton1WWframe_Y = d_lepton1WWframe_Y;
+   lepton1WWframe_Z = d_lepton1WWframe_Z;
+  
+   parton_sumWWframe_X = d_parton_sumWWframe_X;
+   parton_sumWWframe_Y = d_parton_sumWWframe_Y;
+   parton_sumWWframe_Z = d_parton_sumWWframe_Z;
+  
+   parton1WWframe_X = d_parton1WWframe_X;
+   parton1WWframe_Y = d_parton1WWframe_Y;
+   parton1WWframe_Z = d_parton1WWframe_Z;
+  
+   boostWWframe_X = d_boostWWframe_X;
+   boostWWframe_Y = d_boostWWframe_Y;
+   boostWWframe_Z = d_boostWWframe_Z;
+  
+   boostWlep_X = d_boostWlep_X;
+   boostWlep_Y = d_boostWlep_Y;
+   boostWlep_Z = d_boostWlep_Z;
+  
+   boostWhad_X = d_boostWhad_X;
+   boostWhad_Y = d_boostWhad_Y;
+   boostWhad_Z = d_boostWhad_Z;
+
+   xdotx = d_xdotx;
+   xdoty = d_xdoty;
+   xdotz = d_xdotz;
+
+   ydotx = d_ydotx;
+   ydoty = d_ydoty;
+   ydotz = d_ydotz;
+
+   zdotx = d_zdotx;
+   zdoty = d_zdoty;
+   zdotz = d_zdotz;
+
+   lepton1WWframe_UX = d_lepton1WWframe_UX;
+   lepton1WWframe_UY = d_lepton1WWframe_UY;
+   lepton1WWframe_UZ = d_lepton1WWframe_UZ;
+   
+   lepton_sumWWframe_UX = d_lepton_sumWWframe_UX;
+   lepton_sumWWframe_UY = d_lepton_sumWWframe_UY;
+   lepton_sumWWframe_UZ = d_lepton_sumWWframe_UZ;
+    
+   ///////////////////////////////////////////////////////////////////////
+
+   leptons_in_lep_px_good = d_leptons_in_lep_px_good;
+   leptons_in_lep_py_good = d_leptons_in_lep_py_good;
+   leptons_in_lep_pz_good = d_leptons_in_lep_pz_good;
+  
+   partons_in_lep_px_good = d_partons_in_lep_px_good;
+   partons_in_lep_py_good = d_partons_in_lep_py_good;
+   partons_in_lep_pz_good = d_partons_in_lep_pz_good;
+  
+   parton1_in_lep_px_good = d_parton1_in_lep_px_good;
+   parton1_in_lep_py_good = d_parton1_in_lep_py_good;
+   parton1_in_lep_pz_good = d_parton1_in_lep_pz_good;
+
+   parton2_in_lep_px_good = d_parton2_in_lep_px_good;
+   parton2_in_lep_py_good = d_parton2_in_lep_py_good;
+   parton2_in_lep_pz_good = d_parton2_in_lep_pz_good;
+
+   lepton1_in_lep_px_good = d_lepton1_in_lep_px_good;
+   lepton1_in_lep_py_good = d_lepton1_in_lep_py_good;
+   lepton1_in_lep_pz_good = d_lepton1_in_lep_pz_good;
+  
+   //lepton1_dotted_x_good = d_lepton1_dotted_x_good;
+   //lepton1_dotted_y_good = d_lepton1_dotted_y_good;
+   //lepton1_dotted_z_good = d_lepton1_dotted_z_good;
+  
+   leptons_in_had_px_good = d_leptons_in_had_px_good;
+   leptons_in_had_py_good = d_leptons_in_had_py_good;
+   leptons_in_had_pz_good = d_leptons_in_had_pz_good;
+  
+   lepton1_in_had_px_good = d_lepton1_in_had_px_good;
+   lepton1_in_had_py_good = d_lepton1_in_had_py_good;
+   lepton1_in_had_pz_good = d_lepton1_in_had_pz_good;
+  
+   lepton2_in_had_px_good = d_lepton2_in_had_px_good;
+   lepton2_in_had_py_good = d_lepton2_in_had_py_good;
+   lepton2_in_had_pz_good = d_lepton2_in_had_pz_good;
+  
+   parton1_in_had_px_good = d_parton1_in_had_px_good;
+   parton1_in_had_py_good = d_parton1_in_had_py_good;
+   parton1_in_had_pz_good = d_parton1_in_had_pz_good;
+  
+   //parton1_dotted_x_good = d_parton1_dotted_x_good;
+   //parton1_dotted_y_good = d_parton1_dotted_y_good;
+   //parton1_dotted_z_good = d_parton1_dotted_z_good;
+  
+   //complicated1_px_good = d_complicated1_px_good;
+   //complicated1_py_good = d_complicated1_py_good;
+   //complicated1_pz_good = d_complicated1_pz_good;
+  
+   //complicated2_px_good = d_complicated2_px_good;
+   //complicated2_py_good = d_complicated2_py_good;
+   //complicated2_pz_good = d_complicated2_pz_good;
+  
+   lepton_sumWWframe_X_good = d_lepton_sumWWframe_X_good;
+   lepton_sumWWframe_Y_good = d_lepton_sumWWframe_Y_good;
+   lepton_sumWWframe_Z_good = d_lepton_sumWWframe_Z_good;
+  
+   lepton1WWframe_X_good = d_lepton1WWframe_X_good;
+   lepton1WWframe_Y_good = d_lepton1WWframe_Y_good;
+   lepton1WWframe_Z_good = d_lepton1WWframe_Z_good;
+  
+   parton_sumWWframe_X_good = d_parton_sumWWframe_X_good;
+   parton_sumWWframe_Y_good = d_parton_sumWWframe_Y_good;
+   parton_sumWWframe_Z_good = d_parton_sumWWframe_Z_good;
+  
+   parton1WWframe_X_good = d_parton1WWframe_X_good;
+   parton1WWframe_Y_good = d_parton1WWframe_Y_good;
+   parton1WWframe_Z_good = d_parton1WWframe_Z_good;
+  
+   //boostWWframe_X_good = d_boostWWframe_X_good;
+   //boostWWframe_Y_good = d_boostWWframe_Y_good;
+   //boostWWframe_Z_good = d_boostWWframe_Z_good;
+  
+   //boostWlep_X_good = d_boostWlep_X_good;
+   //boostWlep_Y_good = d_boostWlep_Y_good;
+   //boostWlep_Z_good = d_boostWlep_Z_good;
+  
+   //boostWhad_X_good = d_boostWhad_X_good;
+   //boostWhad_Y_good = d_boostWhad_Y_good;
+   //boostWhad_Z_good = d_boostWhad_Z_good;
+   //*/ 
 
   // MARKER TRUTH MATCHING
   //   _____           _   _       __  __       _       _     _             
@@ -3748,15 +4340,22 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   if (bad_event) return; //{std::cout << "bad event reached truth matching.\n"; return;}
   if (bad_event) std::cout << "you shouldn't be seeing this.";
    
-  lepton_deltaR = lepton.DeltaR(lepton_gen);
-  lepton_deltaPhi = lepton.DeltaPhi(lepton_gen);
+  lepton_deltaR = lepton.DeltaR(lepton_Gen);
+  lepton_deltaPhi = lepton.DeltaPhi(lepton_Gen);
   
-  neutrino_deltaR = met4vector.DeltaR(neutrino_gen);
-  neutrino_deltaPhi = met4vector.DeltaPhi(neutrino_gen);
-  neutrino_deltaPt = met4vector.Pt() - neutrino_gen.Pt();
+  neutrino_deltaR = met4vector.DeltaR(neutrino_Gen);
+  neutrino_deltaPhi = met4vector.DeltaPhi(neutrino_Gen);
+  
+  neutrino_deltaPt = met4vector.Pt() - neutrino_Gen.Pt();
+  other_neutrino_deltaPt = other_met4vector.Pt() - neutrino_Gen.Pt();
 
-  other_neutrino_deltaR = other_met4vector.DeltaR(neutrino_gen);
-  other_neutrino_deltaPhi = other_met4vector.DeltaPhi(neutrino_gen);
+  neutrino_deltaPx = met4vector.Px() - neutrino_Gen.Px();//hey
+  other_neutrino_deltaPx = other_met4vector.Px() - neutrino_Gen.Px();
+  neutrino_deltaPy = met4vector.Py() - neutrino_Gen.Py();
+  other_neutrino_deltaPy = other_met4vector.Py() - neutrino_Gen.Py();
+
+  other_neutrino_deltaR = other_met4vector.DeltaR(neutrino_Gen);
+  other_neutrino_deltaPhi = other_met4vector.DeltaPhi(neutrino_Gen);
 
   TLorentzVector truth_met4vector, false_met4vector;
 
@@ -3863,7 +4462,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   /////////////////////////////////////LET'S TEST THE WWMASS
   //
   TLorentzVector quark_sum = quark_gen + antiquark_gen;
-  TLorentzVector lepton_gen_sum = lepton_gen + neutrino_gen;
+  TLorentzVector lepton_gen_sum = lepton_Gen + neutrino_Gen;
   TLorentzVector lepton_sum = lepton + met4vector;
 
   hadronic_gen_2body_mass = std::sqrt(quark_sum.Dot(quark_sum));
@@ -3872,244 +4471,46 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //
   ///////////////////////////////////////////////////
 
-  /*//////
-    TEMPLATE
-    _px = .Px();
-    _py = .Py();
-    _pz = .Pz();
-    _e = .E();
-    _eta = .Eta();
-    _pt = .Pt();
-    _theta = .Theta();
-    _phi = .Phi();
-    _y = .Rapidity();
-    _mass = .M();
-    END TEMPLATE */
-
-  electrn_reco.Px = electron.Px();
-  electrn_reco.Py = electron.Py();
-  electrn_reco.Pz = electron.Pz();
-  electrn_reco.E = electron.E();
-  electrn_reco.Eta = electron.Eta();
-  electrn_reco.Pt = electron.Pt();
-  electrn_reco.Theta = electron.Theta();
-  electrn_reco.Phi = electron.Phi();
-  electrn_reco.Y = electron.Rapidity();
-  electrn_reco.M = electron.M();
-
-  muon_reco.Px = muon.Px();
-  muon_reco.Py = muon.Py();
-  muon_reco.Pz = muon.Pz();
-  muon_reco.E = muon.E();
-  muon_reco.Eta = muon.Eta();
-  muon_reco.Pt = muon.Pt();
-  muon_reco.Theta = muon.Theta();
-  muon_reco.Phi = muon.Phi();
-  muon_reco.Y = muon.Rapidity();
-  muon_reco.M = muon.M();
-
-  lepton_reco.Px = lepton.Px();
-  lepton_reco.Py = lepton.Py();
-  lepton_reco.Pz = lepton.Pz();
-  lepton_reco.E = lepton.E();
-  lepton_reco.Eta = lepton.Eta();
-  lepton_reco.Pt = lepton.Pt();
-  lepton_reco.Theta = lepton.Theta();
-  lepton_reco.Phi = lepton.Phi();
-  lepton_reco.Y = lepton.Rapidity();
-  lepton_reco.M = lepton.M();
-
-  jt0.Px = jet0.Px();
-  jt0.Py = jet0.Py();
-  jt0.Pz = jet0.Pz();
-  jt0.E = jet0.E();
-  jt0.Eta = jet0.Eta();
-  jt0.Pt = jet0.Pt();
-  jt0.Theta = jet0.Theta();
-  jt0.Phi = jet0.Phi();
-  jt0.Y = jet0.Rapidity();
-  jt0.M = jet0.M();
-
-  jt1.Px = jet1.Px();
-  jt1.Py = jet1.Py();
-  jt1.Pz = jet1.Pz();
-  jt1.E = jet1.E();
-  jt1.Eta = jet1.Eta();
-  jt1.Pt = jet1.Pt();
-  jt1.Theta = jet1.Theta();
-  jt1.Phi = jet1.Phi();
-  jt1.Y = jet1.Rapidity();
-  jt1.M = jet1.M();
-
-  subjt0.Px = subjet0.Px();
-  subjt0.Py = subjet0.Py();
-  subjt0.Pz = subjet0.Pz();
-  subjt0.E = subjet0.E();
-  subjt0.Eta = subjet0.Eta();
-  subjt0.Pt = subjet0.Pt();
-  subjt0.Theta = subjet0.Theta();
-  subjt0.Phi = subjet0.Phi();
-  subjt0.Y = subjet0.Rapidity();
-  subjt0.M = subjet0.M();
-
-  subjt1.Px = subjet1.Px();
-  subjt1.Py = subjet1.Py();
-  subjt1.Pz = subjet1.Pz();
-  subjt1.E = subjet1.E();
-  subjt1.Eta = subjet1.Eta();
-  subjt1.Pt = subjet1.Pt();
-  subjt1.Theta = subjet1.Theta();
-  subjt1.Phi = subjet1.Phi();
-  subjt1.Y = subjet1.Rapidity();
-  subjt1.M = subjet1.M();
-
-  ntrno_reco.Px = met4vector.Px();
-  ntrno_reco.Py = met4vector.Py();
-  ntrno_reco.Pz = met4vector.Pz();
-  ntrno_reco.E = met4vector.E();
-  ntrno_reco.Eta = met4vector.Eta();
-  ntrno_reco.Pt = met4vector.Pt();
-  ntrno_reco.Theta = met4vector.Theta();
-  ntrno_reco.Phi = met4vector.Phi();
-  ntrno_reco.Y = met4vector.Rapidity();
-  ntrno_reco.M = met4vector.M();
-
-  other_ntrno_reco.Px = other_met4vector.Px();
-  other_ntrno_reco.Py = other_met4vector.Py();
-  other_ntrno_reco.Pz = other_met4vector.Pz();
-  other_ntrno_reco.E = other_met4vector.E();
-  other_ntrno_reco.Eta = other_met4vector.Eta();
-  other_ntrno_reco.Pt = other_met4vector.Pt();
-  other_ntrno_reco.Theta = other_met4vector.Theta();
-  other_ntrno_reco.Phi = other_met4vector.Phi();
-  other_ntrno_reco.Y = other_met4vector.Rapidity();
-  other_ntrno_reco.M = other_met4vector.M();
-
-  truth_ntrno_reco.Px = truth_met4vector.Px();
-  truth_ntrno_reco.Py = truth_met4vector.Py();
-  truth_ntrno_reco.Pz = truth_met4vector.Pz();
-  truth_ntrno_reco.E = truth_met4vector.E();
-  truth_ntrno_reco.Eta = truth_met4vector.Eta();
-  truth_ntrno_reco.Pt = truth_met4vector.Pt();
-  truth_ntrno_reco.Theta = truth_met4vector.Theta();
-  truth_ntrno_reco.Phi = truth_met4vector.Phi();
-  truth_ntrno_reco.Y = truth_met4vector.Rapidity();
-  truth_ntrno_reco.M = truth_met4vector.M();
-
-  false_ntrno_reco.Px = false_met4vector.Px();
-  false_ntrno_reco.Py = false_met4vector.Py();
-  false_ntrno_reco.Pz = false_met4vector.Pz();
-  false_ntrno_reco.E = false_met4vector.E();
-  false_ntrno_reco.Eta = false_met4vector.Eta();
-  false_ntrno_reco.Pt = false_met4vector.Pt();
-  false_ntrno_reco.Theta = false_met4vector.Theta();
-  false_ntrno_reco.Phi = false_met4vector.Phi();
-  false_ntrno_reco.Y = false_met4vector.Rapidity();
-  false_ntrno_reco.M = false_met4vector.M();
-
-  Whad_reco.Px = Whad.Px();
-  Whad_reco.Py = Whad.Py();
-  Whad_reco.Pz = Whad.Pz();
-  Whad_reco.E = Whad.E();
-  Whad_reco.Eta = Whad.Eta();
-  Whad_reco.Pt = Whad.Pt();
-  Whad_reco.Theta = Whad.Theta();
-  Whad_reco.Phi = Whad.Phi();
-  Whad_reco.Y = Whad.Rapidity();
-  Whad_reco.M = Whad.M();
-
-  Wlep_reco.Px = Wlep.Px();
-  Wlep_reco.Py = Wlep.Py();
-  Wlep_reco.Pz = Wlep.Pz();
-  Wlep_reco.E = Wlep.E();
-  Wlep_reco.Eta = Wlep.Eta();
-  Wlep_reco.Pt = Wlep.Pt();
-  Wlep_reco.Theta = Wlep.Theta();
-  Wlep_reco.Phi = Wlep.Phi();
-  Wlep_reco.Y = Wlep.Rapidity();
-  Wlep_reco.M = Wlep.M();
+  electron_reco.setvalue(electron);
+  muon_reco.setvalue(muon);
+  lepton_reco.setvalue(lepton);
+  jt0.setvalue(jet0);
+  jt1.setvalue(jet1);
+  subjt0.setvalue(subjet0);
+  subjt1.setvalue(subjet1);
+  neutrino_reco.setvalue(met4vector);
+  other_neutrino_reco.setvalue(other_met4vector);
+  truth_neutrino_reco.setvalue(truth_met4vector);
+  false_neutrino_reco.setvalue(false_met4vector);
+  Vhad_reco.setvalue(Vhad);
+  Wlep_reco.setvalue(Wlep);
+  other_Wlep_reco.setvalue(other_Wlep);
 
   //assign gen particles
-    
-  Wpls_gen.Pt = Wplus_gen.Pt();
-  Wmns_gen.Pt = Wminus_gen.Pt();
-  Zntrl_gen.Pt = Zneutral_gen.Pt();
-  qrk_gen.Pt = quark_gen.Pt();
-  antiqrk_gen.Pt = antiquark_gen.Pt();
-  lptn_gen.Pt = lepton_gen.Pt();
-  ntrno_gen.Pt = neutrino_gen.Pt();
 
-  Wpls_gen.Px = Wplus_gen.Px();
-  Wmns_gen.Px = Wminus_gen.Px();
-  Zntrl_gen.Px = Zneutral_gen.Px();
-  qrk_gen.Px = quark_gen.Px();
-  antiqrk_gen.Px = antiquark_gen.Px();
-  lptn_gen.Px = lepton_gen.Px();
-  ntrno_gen.Px = neutrino_gen.Px();
+  if (gen_lep_generation > 0) Wlep_gen.setvalue(Wminus_gen);
+  if (gen_lep_generation < 0) Wlep_gen.setvalue(Wplus_gen);
 
-  Wpls_gen.Py = Wplus_gen.Py();
-  Wmns_gen.Py = Wminus_gen.Py();
-  Zntrl_gen.Py = Zneutral_gen.Py();
-  qrk_gen.Py = quark_gen.Py();
-  antiqrk_gen.Py = antiquark_gen.Py();
-  lptn_gen.Py = lepton_gen.Py();
-  ntrno_gen.Py = neutrino_gen.Py();
+  if (WZevt == 1) Vhad_gen.setvalue(Zneutral_gen);
+  
+  if (WZevt == 0)
+    {
+      if (gen_lep_generation > 0) Vhad_gen.setvalue(Wplus_gen);
+      if (gen_lep_generation < 0) Vhad_gen.setvalue(Wminus_gen);
+    }
 
-  Wpls_gen.Pz = Wplus_gen.Pz();
-  Wmns_gen.Pz = Wminus_gen.Pz();
-  Zntrl_gen.Pz = Zneutral_gen.Pz();
-  qrk_gen.Pz = quark_gen.Pz();
-  antiqrk_gen.Pz = antiquark_gen.Pz();
-  lptn_gen.Pz = lepton_gen.Pz();
-  ntrno_gen.Pz = neutrino_gen.Pz();
+  WV_reco.setvalue(WVreco);
+  other_WV_reco.setvalue(other_WVreco);
+  WV_gen.setvalue(WVgen);
+  WV_gen_reco.setvalue(WVgen_reco);
 
-  Wpls_gen.E = Wplus_gen.E();
-  Wmns_gen.E = Wminus_gen.E();
-  Zntrl_gen.E = Zneutral_gen.E();
-  qrk_gen.E = quark_gen.E();
-  antiqrk_gen.E = antiquark_gen.E();
-  lptn_gen.E = lepton_gen.E();
-  ntrno_gen.E = neutrino_gen.E();
-
-  Wpls_gen.Eta = Wplus_gen.Eta();
-  Wmns_gen.Eta = Wminus_gen.Eta();
-  Zntrl_gen.Eta = Zneutral_gen.Eta();
-  qrk_gen.Eta = quark_gen.Eta();
-  antiqrk_gen.Eta = antiquark_gen.Eta();
-  lptn_gen.Eta = lepton_gen.Eta();
-  ntrno_gen.Eta = neutrino_gen.Eta();
-
-  Wpls_gen.Theta = Wplus_gen.Theta();
-  Wmns_gen.Theta = Wminus_gen.Theta();
-  Zntrl_gen.Theta = Zneutral_gen.Theta();
-  qrk_gen.Theta = quark_gen.Theta();
-  antiqrk_gen.Theta = antiquark_gen.Theta();
-  lptn_gen.Theta = lepton_gen.Theta();
-  ntrno_gen.Theta = neutrino_gen.Theta();
-
-  Wpls_gen.Phi = Wplus_gen.Phi();
-  Wmns_gen.Phi = Wminus_gen.Phi();
-  Zntrl_gen.Phi = Zneutral_gen.Phi();
-  qrk_gen.Phi = quark_gen.Phi();
-  antiqrk_gen.Phi = antiquark_gen.Phi();
-  lptn_gen.Phi = lepton_gen.Phi();
-  ntrno_gen.Phi = neutrino_gen.Phi();
-
-  Wpls_gen.Y = Wplus_gen.Rapidity();
-  Wmns_gen.Y = Wminus_gen.Rapidity();
-  Zntrl_gen.Y = Zneutral_gen.Rapidity();
-  qrk_gen.Y = quark_gen.Rapidity();
-  antiqrk_gen.Y = antiquark_gen.Rapidity();
-  lptn_gen.Y = lepton_gen.Rapidity();
-  ntrno_gen.Y = neutrino_gen.Rapidity();
-
-  Wpls_gen.M = Wplus_gen.M();
-  Wmns_gen.M = Wminus_gen.M();
-  Zntrl_gen.M = Zneutral_gen.M();
-  qrk_gen.M = quark_gen.M();
-  antiqrk_gen.M = antiquark_gen.M();
-  lptn_gen.M = lepton_gen.M();
-  ntrno_gen.M = neutrino_gen.M();
+  Wpls_gen.setvalue(Wplus_gen);
+  Wmns_gen.setvalue(Wminus_gen);
+  Zntrl_gen.setvalue(Zneutral_gen);
+  qrk_gen.setvalue(quark_gen);
+  antiqrk_gen.setvalue(antiquark_gen);
+  lepton_gen.setvalue(lepton_Gen);
+  neutrino_gen.setvalue(neutrino_Gen);
 
   Tau21 = tau21; Tau32 = tau32; PTau21 = puppi_tau21; PTau32 = puppi_tau32;
   
@@ -4316,6 +4717,29 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   anom_weight50 = *weight50th;
 */
 #endif
+
+#ifdef NEW_WEIGHTS
+
+  edm::Handle<LHEEventProduct> LHEevtProductExternal;
+  iEvent.getByToken(LHEEventProductTokenExternal, LHEevtProductExternal);
+
+  int weightNumber = 1;
+  if (LHEevtProductExternal->weights().size())
+    {
+      for (unsigned int iwgt = 0; iwgt < LHEevtProductExternal->weights().size(); ++iwgt)
+	{
+	  const LHEEventProduct::WGT& wgt = LHEevtProductExternal->weights().at(iwgt);
+	  if (boost::algorithm::contains(wgt.id, "rwgt_" + std::to_string(weightNumber)))
+	    {
+	      aTGCWeights.push_back(wgt.wgt);
+	      weightNumber++;
+	    }
+	}
+    }
+  for (int i = 0; i < weightNumber; i++) std::cout << aTGCWeights[i] << std::endl;
+
+#endif
+  
   //MARKER FILL TREE
   //
   //  mmmmmm   "    ""#    ""#          mmmmmmm                     
@@ -4324,11 +4748,12 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //  #        #      #      #             #     #     #""""  #"""" 
   //  #      mm#mm    "mm    "mm           #     #     "#mm"  "#mm" 
   //
-  //These are histograms primarily for comparing this full simulation to a toy monte carlo that was developed to run simulations on neutrino pz schemes
+  
 
   if (bad_event) return; //{std::cout << "bad event reached fill tree\n"; return;}
   if (bad_event) std::cout << "you shouldn't be seeing this.";
-  
+
+   //These are histograms primarily for comparing this full simulation to a toy monte carlo that was developed to run simulations on neutrino pz schemes
   if (!bad_event) MyTree->Fill();
   if ((abs(reco_lep_generation) == 1 && loose_electron == 0 && extra_electron == 0 && electron_out_of_bounds == 0) || (abs(reco_lep_generation) == 2 && loose_muon == 0 && extra_muon == 0 && muon_out_of_bounds == 0))
     {
@@ -4343,7 +4768,7 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       
       wp_mass->Fill(Wplus_gen.M());
       wm_mass->Fill(Wminus_gen.M());
-      //pt_smear->Fill(neutrino_gen.Pt() - met4vector.Pt());
+      //pt_smear->Fill(neutrino_Gen.Pt() - met4vector.Pt());
 
       Double_t anti0 = antiquark_gen.DeltaR(subjet0);//0
       Double_t anti1 = antiquark_gen.DeltaR(subjet1);//1
@@ -4389,60 +4814,60 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       if (imaginary_neutrino == 0 && good_jet == 1)
 	{
-	  comp_hist0->Fill(neutrino_gen.Pz() - fill_pz0);
-	  comp_hist1->Fill(neutrino_gen.Pz() - fill_pz1);
-	  comp_hist2->Fill(neutrino_gen.Pz() - fill_pz2);
-	  comp_hist3->Fill(neutrino_gen.Pz() - fill_pz3);
-	  comp_hist4->Fill(neutrino_gen.Pz() - fill_pz4);
-	  comp_hist5->Fill(neutrino_gen.Pz() - fill_pz5);
-	  comp_hist6->Fill(neutrino_gen.Pz() - fill_pz6);
-	  comp_hist7->Fill(neutrino_gen.Pz() - fill_pz7);
+	  comp_hist0->Fill(neutrino_Gen.Pz() - fill_pz0);
+	  comp_hist1->Fill(neutrino_Gen.Pz() - fill_pz1);
+	  comp_hist2->Fill(neutrino_Gen.Pz() - fill_pz2);
+	  comp_hist3->Fill(neutrino_Gen.Pz() - fill_pz3);
+	  comp_hist4->Fill(neutrino_Gen.Pz() - fill_pz4);
+	  comp_hist5->Fill(neutrino_Gen.Pz() - fill_pz5);
+	  comp_hist6->Fill(neutrino_Gen.Pz() - fill_pz6);
+	  comp_hist7->Fill(neutrino_Gen.Pz() - fill_pz7);
 	}
 
       wp_pt->Fill(Wplus_gen.Pt());
       wm_pt->Fill(Wminus_gen.Pt());
-      if (good_jet == 1) whad_pt->Fill(Whad.Pt());
+      if (good_jet == 1) vhad_pt->Fill(Vhad.Pt());
       wlep_pt->Fill(Wlep.Pt());
-      neu_pt->Fill(neutrino_gen.Pt());
+      neu_pt->Fill(neutrino_Gen.Pt());
       met_pt->Fill(met4vector.Pt());
 
       wp_rap->Fill(Wplus_gen.Rapidity());
       wm_rap->Fill(Wminus_gen.Rapidity());
-      if (good_jet == 1) whad_rap->Fill(Whad.Rapidity());
+      if (good_jet == 1) vhad_rap->Fill(Vhad.Rapidity());
       wlep_rap->Fill(Wlep.Rapidity());
-      neu_rap->Fill(neutrino_gen.Rapidity());
+      neu_rap->Fill(neutrino_Gen.Rapidity());
       met_rap->Fill(met4vector.Rapidity());
 
       wplus_theta->Fill(Wplus_gen.Theta()); wminus_theta->Fill(Wminus_gen.Theta());
-      lepton_theta->Fill(lepton_gen.Theta()); neutrino_theta->Fill(neutrino_gen.Theta());
+      lepton_theta->Fill(lepton_Gen.Theta()); neutrino_theta->Fill(neutrino_Gen.Theta());
       quark_theta->Fill(quark_gen.Theta()); antiquark_theta->Fill(antiquark_gen.Theta());
       
       wplus_phi->Fill(Wplus_gen.Phi()); wminus_phi->Fill(Wminus_gen.Phi());
-      lepton_phi->Fill(lepton_gen.Phi()); neutrino_phi->Fill(neutrino_gen.Phi());
+      lepton_phi->Fill(lepton_Gen.Phi()); neutrino_phi->Fill(neutrino_Gen.Phi());
       quark_phi->Fill(quark_gen.Phi()); antiquark_phi->Fill(antiquark_gen.Phi());
 
       if (reco_lep_generation > 0)
 	{
-	  if (good_jet == 1) whad_pt_smear->Fill(Wplus_gen.Pt() - Whad.Pt());
-	  if (good_jet == 1) whad_phi_smear->Fill(Wplus_gen.Phi() - Whad.Phi());
-	  if (good_jet == 1) whad_eta_smear->Fill(Wplus_gen.Eta() - Whad.Eta());
+	  if (good_jet == 1) vhad_pt_smear->Fill(Wplus_gen.Pt() - Vhad.Pt());
+	  if (good_jet == 1) vhad_phi_smear->Fill(Wplus_gen.Phi() - Vhad.Phi());
+	  if (good_jet == 1) vhad_eta_smear->Fill(Wplus_gen.Eta() - Vhad.Eta());
 	  wlep_pt_smear->Fill(Wminus_gen.Pt() - Wlep.Pt());
 	  wlep_phi_smear->Fill(Wminus_gen.Phi() - Wlep.Phi());
 	  wlep_eta_smear->Fill(Wminus_gen.Eta() - Wlep.Eta());
 	}
       if (reco_lep_generation < 0)
 	{
-	  if (good_jet == 1) whad_pt_smear->Fill(Wminus_gen.Pt() - Whad.Pt());
-	  if (good_jet == 1) whad_phi_smear->Fill(Wminus_gen.Phi() - Whad.Phi());
-	  if (good_jet == 1) whad_eta_smear->Fill(Wminus_gen.Eta() - Whad.Eta());
+	  if (good_jet == 1) vhad_pt_smear->Fill(Wminus_gen.Pt() - Vhad.Pt());
+	  if (good_jet == 1) vhad_phi_smear->Fill(Wminus_gen.Phi() - Vhad.Phi());
+	  if (good_jet == 1) vhad_eta_smear->Fill(Wminus_gen.Eta() - Vhad.Eta());
 	  wlep_pt_smear->Fill(Wplus_gen.Pt() - Wlep.Pt());
 	  wlep_phi_smear->Fill(Wplus_gen.Phi() - Wlep.Phi());
 	  wlep_eta_smear->Fill(Wplus_gen.Eta() - Wlep.Eta());
 	}
       
-      met_pt_smear->Fill(neutrino_gen.Pt() - met4vector.Pt());
-      met_phi_smear->Fill(neutrino_gen.Phi() - met4vector.Phi());
-      met_eta_smear->Fill(neutrino_gen.Eta() - met4vector.Eta());
+      met_pt_smear->Fill(neutrino_Gen.Pt() - met4vector.Pt());
+      met_phi_smear->Fill(neutrino_Gen.Phi() - met4vector.Phi());
+      met_eta_smear->Fill(neutrino_Gen.Eta() - met4vector.Eta());
             
       if (abs(reco_lep_generation) == 1)
 	{
@@ -4452,14 +4877,14 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  //if (electron_value_set == 0) {std::cout << "reco_lep_generation = " << reco_lep_generation << std::endl << "el_mark = " << el_mark << " how is the electron not set?\n"; exit(22);}
 	  
 	  elr_pt->Fill(electron.Pt());
-	  elg_pt->Fill(lepton_gen.Pt());
+	  elg_pt->Fill(lepton_Gen.Pt());
 
 	  elr_rap->Fill(electron.Rapidity());
-	  elg_rap->Fill(lepton_gen.Rapidity());
+	  elg_rap->Fill(lepton_Gen.Rapidity());
 
-	  el_pt_smear->Fill(lepton_gen.Pt() - electron.Pt());
-	  el_phi_smear->Fill(lepton_gen.Phi() - electron.Phi());
-	  el_eta_smear->Fill(lepton_gen.Eta() - electron.Eta());
+	  el_pt_smear->Fill(lepton_Gen.Pt() - electron.Pt());
+	  el_phi_smear->Fill(lepton_Gen.Phi() - electron.Phi());
+	  el_eta_smear->Fill(lepton_Gen.Eta() - electron.Eta());
 	}
       
       if (abs(reco_lep_generation) == 2)
@@ -4470,14 +4895,14 @@ ntuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  //if (muon_value_set == 0) {std::cout << "reco_lep_generation = " << reco_lep_generation << std::endl << "mu_mark = " << mu_mark << " how is the muon not set?\n"; exit(22);}
 	  
 	  mur_pt->Fill(muon.Pt());    
-	  mug_pt->Fill(lepton_gen.Pt());
+	  mug_pt->Fill(lepton_Gen.Pt());
 
 	  mur_rap->Fill(muon.Rapidity());    
-	  mug_rap->Fill(lepton_gen.Rapidity());
+	  mug_rap->Fill(lepton_Gen.Rapidity());
 
-	  mu_pt_smear->Fill(lepton_gen.Pt() - muon.Pt());
-	  mu_phi_smear->Fill(lepton_gen.Phi() - muon.Phi());
-	  mu_eta_smear->Fill(lepton_gen.Eta() - muon.Eta());
+	  mu_pt_smear->Fill(lepton_Gen.Pt() - muon.Pt());
+	  mu_phi_smear->Fill(lepton_Gen.Phi() - muon.Phi());
+	  mu_eta_smear->Fill(lepton_Gen.Eta() - muon.Eta());
 	}
      
       //good_events++;
@@ -4678,14 +5103,25 @@ void calculateAngles(TLorentzVector thep4M11, TLorentzVector thep4M12, TLorentzV
 
 }
 
-
-void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentzVector parton1, TLorentzVector parton2, Double_t& leptons_in_lep_px, Double_t& leptons_in_lep_py, Double_t& leptons_in_lep_pz, Double_t& partons_in_lep_px, Double_t& partons_in_lep_py, Double_t& partons_in_lep_pz, Double_t& parton1_in_lep_px, Double_t& parton2_in_lep_px, Double_t& parton1_in_lep_py, Double_t& parton2_in_lep_py, Double_t& parton1_in_lep_pz, Double_t& parton2_in_lep_pz, Double_t& lepton1_in_lep_px, Double_t& lepton1_in_lep_py, Double_t& lepton1_in_lep_pz, Double_t& lepton1_dotted_x, Double_t& lepton1_dotted_y, Double_t& lepton1_dotted_z, Double_t& leptons_in_had_px, Double_t& leptons_in_had_py, Double_t& leptons_in_had_pz, Double_t& lepton1_in_had_px, Double_t& lepton1_in_had_py, Double_t& lepton1_in_had_pz, Double_t& lepton2_in_had_px, Double_t& lepton2_in_had_py, Double_t& lepton2_in_had_pz, Double_t& parton1_in_had_px, Double_t& parton1_in_had_py, Double_t& parton1_in_had_pz, Double_t& parton1_dotted_x, Double_t& parton1_dotted_y, Double_t& parton1_dotted_z, Double_t& complicated1_px, Double_t& complicated1_py, Double_t& complicated1_pz, Double_t& complicated2_px, Double_t& complicated2_py, Double_t& complicated2_pz, Double_t& lepton_sumWWframe_X, Double_t& lepton_sumWWframe_Y, Double_t& lepton_sumWWframe_Z, Double_t& lepton1WWframe_X, Double_t& lepton1WWframe_Y, Double_t& lepton1WWframe_Z, Double_t& parton_sumWWframe_X, Double_t& parton_sumWWframe_Y, Double_t& parton_sumWWframe_Z, Double_t& parton1WWframe_X, Double_t& parton1WWframe_Y, Double_t& parton1WWframe_Z, Double_t& costhetastar, Double_t& costheta1, Double_t& phi, Double_t& costheta2, Double_t& phi1, Double_t& phi2, Double_t& boostWWframe_X, Double_t& boostWWframe_Y, Double_t& boostWWframe_Z, Double_t& boostWlep_X, Double_t& boostWlep_Y, Double_t& boostWlep_Z, Double_t& boostWhad_X, Double_t& boostWhad_Y, Double_t& boostWhad_Z)
+/*/INTERMEDIATE STEPS
+void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentzVector parton1, TLorentzVector parton2, Int_t neu_status, Double_t& leptons_in_lep_px, Double_t& leptons_in_lep_py, Double_t& leptons_in_lep_pz, Double_t& partons_in_lep_px, Double_t& partons_in_lep_py, Double_t& partons_in_lep_pz, Double_t& parton1_in_lep_px, Double_t& parton2_in_lep_px, Double_t& parton1_in_lep_py, Double_t& parton2_in_lep_py, Double_t& parton1_in_lep_pz, Double_t& parton2_in_lep_pz, Double_t& lepton1_in_lep_px, Double_t& lepton1_in_lep_py, Double_t& lepton1_in_lep_pz, Double_t& lepton1_dotted_x, Double_t& lepton1_dotted_y, Double_t& lepton1_dotted_z, Double_t& leptons_in_had_px, Double_t& leptons_in_had_py, Double_t& leptons_in_had_pz, Double_t& lepton1_in_had_px, Double_t& lepton1_in_had_py, Double_t& lepton1_in_had_pz, Double_t& lepton2_in_had_px, Double_t& lepton2_in_had_py, Double_t& lepton2_in_had_pz, Double_t& parton1_in_had_px, Double_t& parton1_in_had_py, Double_t& parton1_in_had_pz, Double_t& parton1_dotted_x, Double_t& parton1_dotted_y, Double_t& parton1_dotted_z, Double_t& complicated1_px, Double_t& complicated1_py, Double_t& complicated1_pz, Double_t& complicated2_px, Double_t& complicated2_py, Double_t& complicated2_pz, Double_t& lepton_sumWWframe_X, Double_t& lepton_sumWWframe_Y, Double_t& lepton_sumWWframe_Z, Double_t& lepton1WWframe_X, Double_t& lepton1WWframe_Y, Double_t& lepton1WWframe_Z, Double_t& parton_sumWWframe_X, Double_t& parton_sumWWframe_Y, Double_t& parton_sumWWframe_Z, Double_t& parton1WWframe_X, Double_t& parton1WWframe_Y, Double_t& parton1WWframe_Z, Double_t& costhetastar, Double_t& costheta1, Double_t& phi, Double_t& costheta2, Double_t& phi1, Double_t& phi2, Double_t& boostWWframe_X, Double_t& boostWWframe_Y, Double_t& boostWWframe_Z, Double_t& boostWlep_X, Double_t& boostWlep_Y, Double_t& boostWlep_Z, Double_t& boostWhad_X, Double_t& boostWhad_Y, Double_t& boostWhad_Z, Double_t& xdotx, Double_t& xdoty, Double_t& xdotz, Double_t& ydotx, Double_t& ydoty, Double_t& ydotz, Double_t& zdotx, Double_t& zdoty, Double_t& zdotz, Double_t& lepton1WWframe_UX, Double_t& lepton1WWframe_UY, Double_t& lepton1WWframe_UZ, Double_t& lepton_sumWWframe_UX, Double_t& lepton_sumWWframe_UY, Double_t& lepton_sumWWframe_UZ, Int_t& leptons_in_lep_px_good, Int_t& leptons_in_lep_py_good, Int_t& leptons_in_lep_pz_good, Int_t& partons_in_lep_px_good, Int_t& partons_in_lep_py_good, Int_t& partons_in_lep_pz_good, Int_t& parton1_in_lep_px_good, Int_t& parton2_in_lep_px_good, Int_t& parton1_in_lep_py_good, Int_t& parton2_in_lep_py_good, Int_t& parton1_in_lep_pz_good, Int_t& parton2_in_lep_pz_good, Int_t& lepton1_in_lep_px_good, Int_t& lepton1_in_lep_py_good, Int_t& lepton1_in_lep_pz_good, Int_t& leptons_in_had_px_good, Int_t& leptons_in_had_py_good, Int_t& leptons_in_had_pz_good, Int_t& lepton1_in_had_px_good, Int_t& lepton1_in_had_py_good, Int_t& lepton1_in_had_pz_good, Int_t& lepton2_in_had_px_good, Int_t& lepton2_in_had_py_good, Int_t& lepton2_in_had_pz_good, Int_t& parton1_in_had_px_good, Int_t& parton1_in_had_py_good, Int_t& parton1_in_had_pz_good, Int_t& lepton_sumWWframe_X_good, Int_t& lepton_sumWWframe_Y_good, Int_t& lepton_sumWWframe_Z_good, Int_t& lepton1WWframe_X_good, Int_t& lepton1WWframe_Y_good, Int_t& lepton1WWframe_Z_good, Int_t& parton_sumWWframe_X_good, Int_t& parton_sumWWframe_Y_good, Int_t& parton_sumWWframe_Z_good, Int_t& parton1WWframe_X_good, Int_t& parton1WWframe_Y_good, Int_t& parton1WWframe_Z_good)
 {
+  TVector3 x_hat(1.0,0.0,0.0);
+  TVector3 y_hat(0.0,1.0,0.0);
+  TVector3 z_hat(0.0,0.0,1.0);
 
-
+  bad_angle = false;
   TLorentzVector fermion_sum = lepton1 + lepton2 + parton1 + parton2; //4-vector sum of all 4 particles XXX 
   TLorentzVector lepton_sum = lepton1 + lepton2; //4-vector sum of lepton and neutrino XXX
   TLorentzVector parton_sum = parton1 + parton2; //4-vector sum of partons XXX
+
+  TString neu_output = "FIXTHIS";
+  if (neu_status == 0) neu_output = "real";
+  if (neu_status == 1) neu_output = "imaginary";
+
+  //std::cout << "lepton sum mass is " << lepton_sum.M() << " and neutrino is " << neu_output << std::endl;
+  //std::cout << "parton sum mass is " << parton_sum.M() << std::endl;
+  //std::cout << "fermion sum mass is " << fermion_sum.M() << std::endl;
 
   Double_t norm;
 
@@ -4693,6 +5129,23 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   boostWWframe_X = boostWWframe.X(); //newer
   boostWWframe_Y = boostWWframe.Y();
   boostWWframe_Z = boostWWframe.Z();
+
+  if (boostWWframe_X != boostWWframe_X)
+    {
+      bad_angle = true;
+      std::cout << "boostWWframe_X is bad.\n";
+    }
+  if (boostWWframe_Y != boostWWframe_Y)
+    {
+      bad_angle = true;
+      std::cout << "boostWWframe_Y is bad.\n";
+  
+    }
+  if (boostWWframe_Z != boostWWframe_Z)
+    {
+      bad_angle = true;
+      std::cout << "boostWWframe_Z is bad.\n";
+    }
   
   TLorentzVector lepton_sum_WWframe(lepton_sum); //4-vector sum of leptons boosted to WW rest frame (below) XXX  
   TLorentzVector parton_sum_WWframe(parton_sum); //4-vector sum of partons boosted to WW rest frame (below) XXX 
@@ -4704,9 +5157,26 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   leptons_in_lep_py = lepton_sum_WWframe.Y();
   leptons_in_lep_pz = lepton_sum_WWframe.Z();
   
-  if (leptons_in_lep_px != leptons_in_lep_px) leptons_in_lep_px = 800.0;
-  if (leptons_in_lep_py != leptons_in_lep_py) leptons_in_lep_py = 700.0;
-  if (leptons_in_lep_pz != leptons_in_lep_pz) leptons_in_lep_pz = 6000.0;
+  if (leptons_in_lep_px != leptons_in_lep_px)
+    {
+      bad_angle = true;
+      leptons_in_lep_px_good = 0;
+       std::cout << "leptons_in_lep_px is bad" << std::endl;
+    }
+  
+  if (leptons_in_lep_py != leptons_in_lep_py)
+    {
+      bad_angle = true;
+      leptons_in_lep_py_good = 0;
+      std::cout << "leptons_in_lep_py is bad" << std::endl;
+    }
+     
+  if (leptons_in_lep_pz != leptons_in_lep_pz)
+    {
+      bad_angle = true;
+      leptons_in_lep_pz_good = 0;
+      std::cout << "leptons_in_lep_pz is bad" << std::endl;   
+    }
   
  TVector3 lepton_sum_WWframe3vec = TVector3(leptons_in_lep_px, leptons_in_lep_py, leptons_in_lep_pz); //3-vector sum of leptons in WW frame XXX
   
@@ -4729,6 +5199,22 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   boostWlep_X = boostWlep.X(); //newer
   boostWlep_Y = boostWlep.Y();
   boostWlep_Z = boostWlep.Z();
+
+  if (boostWlep_X != boostWlep_X)
+    {
+      bad_angle = true;
+      std::cout << "boostWlep_X is bad" << std::endl;
+    }
+  if (boostWlep_Y != boostWlep_Y)
+    {
+      bad_angle = true;
+      std::cout << "boostWlep_Y is bad" << std::endl;
+    }
+  if (boostWlep_Z != boostWlep_Z)
+    {
+      bad_angle = true;
+      std::cout << "boostWlep_Z is bad" << std::endl;
+    }
   
   TLorentzVector parton_sumWlep_frame(parton_sum); //4-vector sum of partons boosted to leptonic W rest frame (below) XXX
   parton_sumWlep_frame.Boost(boostWlep);
@@ -4739,13 +5225,34 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   partons_in_lep_py = parton_sumWlep_frame.Y();
   partons_in_lep_pz = parton_sumWlep_frame.Z();
   
-  if (partons_in_lep_px != partons_in_lep_px) partons_in_lep_px = 40000.0;
-  if (partons_in_lep_py != partons_in_lep_py) partons_in_lep_py = 50000.0;
-  if (partons_in_lep_pz != partons_in_lep_pz) partons_in_lep_pz = -20000.0;
+  if (partons_in_lep_px != partons_in_lep_px)
+    {
+      bad_angle = true;
+      partons_in_lep_px_good = 0;
+      std::cout << "partons_in_lep_px is bad" << std::endl; 
+    }
+  if (partons_in_lep_py != partons_in_lep_py)
+    {
+      bad_angle = true;
+      partons_in_lep_py_good = 0;
+      std::cout << "partons_in_lep_py is bad" << std::endl;
+    }
+  if (partons_in_lep_pz != partons_in_lep_pz)
+    {
+      bad_angle = true;
+      partons_in_lep_pz_good = 0;
+      std::cout << "partons_in_lep_pz is bad" << std::endl;
+    }
   
   TVector3 unitx_1(-partons_in_lep_px, -partons_in_lep_py, -partons_in_lep_pz); //unit 3-vector (below) of partons boosted to leptonic W rest frame XXX
   norm = 1.0 / (unitx_1.Mag());
   unitx_1 *= norm;
+
+  if (unitx_1.Mag() != unitx_1.Mag() || unitx_1.Mag() == 0.0)
+    {
+      bad_angle = true;
+      std::cout << "unit_x_1 is bad." << std::endl;
+    }
   
   //boost daughters of z2
   TLorentzVector parton1Wlep_frame(parton1); //first parton boosted (below) to leptonic W rest frame XXX
@@ -4764,13 +5271,42 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   parton1_in_lep_pz = parton1Wlep_frame.Z();
   parton2_in_lep_pz = parton2Wlep_frame.Z();
   
-  if (parton1_in_lep_px != parton1_in_lep_px) parton1_in_lep_px = 30000.0;
-  if (parton1_in_lep_py != parton1_in_lep_py) parton1_in_lep_py = 40000.0;
-  if (parton1_in_lep_pz != parton1_in_lep_pz) parton1_in_lep_pz = -13000.0;
+  if (parton1_in_lep_px != parton1_in_lep_px)
+    {
+       bad_angle = true;
+      parton1_in_lep_px_good = 0;
+      std::cout << "parton1_in_lep_px is bad." << std::endl;
+    }
+  if (parton1_in_lep_py != parton1_in_lep_py)
+    {
+       bad_angle = true;
+      parton1_in_lep_py_good = 0;
+      std::cout << "parton1_in_lep_py is bad." << std::endl;
+    }
+  if (parton1_in_lep_pz != parton1_in_lep_pz)
+    {
+      bad_angle = true;
+      parton1_in_lep_pz_good = 0;
+      std::cout << "parton1_in_lep_pz is bad." << std::endl;
+    }
 
-  if (parton2_in_lep_px != parton2_in_lep_px) parton2_in_lep_px = 30000.0;
-  if (parton2_in_lep_py != parton2_in_lep_py) parton2_in_lep_py = 30000.0;
-  if (parton2_in_lep_pz != parton2_in_lep_pz) parton2_in_lep_pz = -8000.0;
+  if (parton2_in_lep_px != parton2_in_lep_px)
+    {
+      bad_angle = true;
+      parton2_in_lep_px_good = 0;
+      std::cout << "parton2_in_lep_px is bad." << std::endl;
+    }
+  if (parton2_in_lep_py != parton2_in_lep_py)
+    {
+      parton2_in_lep_py_good = 0;
+      std::cout << "parton2_in_lep_px is bad." << std::endl;
+    }
+  if (parton2_in_lep_pz != parton2_in_lep_pz)
+    {
+      bad_angle = true;
+      parton2_in_lep_pz_good = 0;
+      std::cout << "parton2_in_lep_px is bad." << std::endl;
+    }
   
   TVector3 parton1Wlep_frame3vec(parton1_in_lep_px, parton1_in_lep_py, parton1_in_lep_pz); //3-vector of first parton in leptonic frame XXX
   TVector3 parton2Wlep_frame3vec(parton2_in_lep_px, parton2_in_lep_py, parton2_in_lep_pz); //3-vector of second parton in leptonic frame XXX
@@ -4779,7 +5315,20 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   TVector3 unitz_1 = parton1Wlep_frame3vec.Cross(parton2Wlep_frame3vec); //unit 3-vector (below) of cross product of partons in leptonic frame XXX
   norm = 1.0 / (unitz_1.Mag());
   unitz_1 *= norm;
+
+  if (unitz_1.Mag() != unitz_1.Mag() || unitz_1.Mag() == 0.0)
+    {
+      bad_angle = true;
+      std::cout << "unitz_1 is bad.\n";
+    }
+   
   TVector3 unity_1 = unitz_1.Cross(unitx_1); //cross product of sum of partons with cross of partons, all in Wlep frame: (parton1 + parton2) X (parton1 X parton2) XXX
+
+  if (unity_1.Mag() != unity_1.Mag() || unity_1.Mag() == 0.0)
+    {
+      bad_angle = true;
+      std::cout << "unity_1 is bad.\n";
+    }
 
   ///unit1: x = partons in lep ; z = cross product of partons and leptons ; y = z cross x
 
@@ -4791,9 +5340,9 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   lepton1_in_lep_py = lepton1Wlep_frame.Y();
   lepton1_in_lep_pz = lepton1Wlep_frame.Z();
   
-  if (lepton1_in_lep_px != lepton1_in_lep_px) lepton1_in_lep_px = -500.0;
-  if (lepton1_in_lep_py != lepton1_in_lep_py) lepton1_in_lep_py = -500.0;
-  if (lepton1_in_lep_pz != lepton1_in_lep_pz) lepton1_in_lep_pz = -300.0;
+  if (lepton1_in_lep_px != lepton1_in_lep_px) {lepton1_in_lep_px_good = 0; bad_angle = true; std::cout << "lepton1_in_lep_px is bad.\n";}
+  if (lepton1_in_lep_py != lepton1_in_lep_py) {lepton1_in_lep_py_good = 0; bad_angle = true; std::cout << "lepton1_in_lep_py is bad.\n";}
+  if (lepton1_in_lep_pz != lepton1_in_lep_pz) {lepton1_in_lep_pz_good = 0; bad_angle = true; std::cout << "lepton1_in_lep_pz is bad.\n";}
   
   TVector3 lepton1Wlep_frame3vec(lepton1_in_lep_px, lepton1_in_lep_py, lepton1_in_lep_pz); //3-vector of 1st lepton in leptonic frame XXX
   TVector3 lepton1Wlep_frame_unit3vec = lepton1Wlep_frame3vec.Unit(); //unit 3-vector of 1st lepton in leptonic frame XXX
@@ -4805,6 +5354,10 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   lepton1_dotted_x = x_m11; // new
   lepton1_dotted_y = y_m11;
   lepton1_dotted_z = z_m11;
+
+  if (lepton1_dotted_x != lepton1_dotted_x) {bad_angle = true; std::cout << "lepton1_dotted_x is bad.\n";}
+  if (lepton1_dotted_y != lepton1_dotted_y) {bad_angle = true; std::cout << "lepton1_dotted_y is bad.\n";}
+  if (lepton1_dotted_z != lepton1_dotted_z) {bad_angle = true; std::cout << "lepton1_dotted_z is bad.\n";}
   
   TVector3 M11_Z1frame(y_m11, z_m11, x_m11); //3-vector made of dot products of 1st lepton XXX
 
@@ -4823,6 +5376,10 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   boostWhad_Y = boostWhad.Y();
   boostWhad_Z = boostWhad.Z();
 
+  if (boostWhad_X != boostWhad_X) {bad_angle = true; std::cout << "boostWhad_X is bad.\n";}
+  if (boostWhad_Y != boostWhad_Y) {bad_angle = true; std::cout << "boostWhad_Y is bad.\n";}
+  if (boostWhad_Z != boostWhad_Z) {bad_angle = true; std::cout << "boostWhad_Z is bad.\n";}
+
   TLorentzVector lepton_sumWhad_frame(lepton_sum); //sum of leptonic vectors boosted to hadronic frame (below) XXX
   lepton_sumWhad_frame.Boost(boostWhad);
 
@@ -4830,15 +5387,20 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   leptons_in_had_py = lepton_sumWhad_frame.Y();
   leptons_in_had_pz = lepton_sumWhad_frame.Z();
   
-  if (leptons_in_had_px != leptons_in_had_px) leptons_in_had_px = -15000.0;
-  if (leptons_in_had_py != leptons_in_had_py) leptons_in_had_py = -15000.0;
-  if (leptons_in_had_pz != leptons_in_had_pz) leptons_in_had_pz = -20000.0;
+  if (leptons_in_had_px != leptons_in_had_px) {leptons_in_had_px_good = 0; bad_angle = true; std::cout << "leptons_in_had_px is bad.\n";}
+  if (leptons_in_had_py != leptons_in_had_py) {leptons_in_had_py_good = 0; bad_angle = true; std::cout << "leptons_in_had_py is bad.\n";}
+  if (leptons_in_had_pz != leptons_in_had_pz) {leptons_in_had_pz_good = 0; bad_angle = true; std::cout << "leptons_in_had_pz is bad.\n";}
   
   TVector3 unitx_2(-leptons_in_had_px, -leptons_in_had_py, -leptons_in_had_pz); //unit 3-vector (below) of leptonic/hadronic boost XXX
   
   norm = 1.0 / (unitx_2.Mag());
   unitx_2 *= norm;
-  
+
+  if (unitx_2.Mag() != unitx_2.Mag() || unitx_2.Mag() == 0.0)
+    {
+      bad_angle = true;
+      std::cout << "unitx_2 is bad.\n";
+    }
   //boost daughters of z2 //////////////////
   TLorentzVector lepton1Whad_frame(lepton1); //first lepton boosted to hadronic frame XXX
   TLorentzVector lepton2Whad_frame(lepton2); //second lepton boosted to hadronic frame XXX
@@ -4855,13 +5417,13 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   lepton2_in_had_pz = lepton2Whad_frame.Z();
 
   ////////////////
-  if (lepton1_in_had_px != lepton1_in_had_px) lepton1_in_had_px = -8000.0;
-  if (lepton1_in_had_py != lepton1_in_had_py) lepton1_in_had_py = -10000.0;
-  if (lepton1_in_had_pz != lepton1_in_had_pz) lepton1_in_had_pz = -14000.0;
+  if (lepton1_in_had_px != lepton1_in_had_px) {lepton1_in_had_px_good = 0; bad_angle = true; std::cout << "lepton1_in_had_px is bad.\n";}
+  if (lepton1_in_had_py != lepton1_in_had_py) {lepton1_in_had_py_good = 0; bad_angle = true; std::cout << "lepton1_in_had_py is bad.\n";}
+  if (lepton1_in_had_pz != lepton1_in_had_pz) {lepton1_in_had_pz_good = 0; bad_angle = true; std::cout << "lepton1_in_had_pz is bad.\n";}
 
-  if (lepton2_in_had_px != lepton2_in_had_px) lepton2_in_had_px = -8000.0;
-  if (lepton2_in_had_py != lepton2_in_had_py) lepton2_in_had_py = +7000.0;
-  if (lepton2_in_had_pz != lepton2_in_had_pz) lepton2_in_had_pz = -14000.0;
+  if (lepton2_in_had_px != lepton2_in_had_px) {lepton2_in_had_px_good = 0; bad_angle = true; std::cout << "lepton2_in_had_px is bad.\n";}
+  if (lepton2_in_had_py != lepton2_in_had_py) {lepton2_in_had_py_good = 0; bad_angle = true; std::cout << "lepton2_in_had_py is bad.\n";}
+  if (lepton2_in_had_pz != lepton2_in_had_pz) {lepton2_in_had_pz_good = 0; bad_angle = true; std::cout << "lepton2_in_had_pz is bad.\n";}
   
   TVector3 lepton1Whad_frame3vec(lepton1_in_had_px, lepton1_in_had_py, lepton1_in_had_pz); //3-vector of 1st lepton in hadronic frame XXX
   TVector3 lepton2Whad_frame3vec(lepton2_in_had_px, lepton2_in_had_py, lepton2_in_had_pz); //3-vector of 2nd lepton in hadronic frame XXX
@@ -4871,6 +5433,11 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   unitz_2 *= norm;
   TVector3 unity_2 = unitz_2.Cross(unitx_2); //cross of other units XXX
 
+  if (unitz_2.Mag() != unitz_2.Mag() || unitz_2.Mag() == 0.0)
+    {
+      bad_angle = true;
+      std::cout << "unitz_2 is bad.\n";
+    }
   ///unit2: x = lepton sum in had; z = lepton1 cross lepton 2, all in had frame; y = z cross z
   
   //calcuate theta2
@@ -4881,9 +5448,18 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   parton1_in_had_py = parton1Whad_frame.Y();
   parton1_in_had_pz = parton1Whad_frame.Z();
   
-  if (parton1_in_had_px != parton1_in_had_px) parton1_in_had_px = -50.0;
-  if (parton1_in_had_py != parton1_in_had_py) parton1_in_had_py = -50.0;
-  if (parton1_in_had_pz != parton1_in_had_pz) parton1_in_had_pz = -60.0;
+  if (parton1_in_had_px != parton1_in_had_px)
+    {
+    parton1_in_had_px_good = 0; bad_angle = true; std::cout << "parton1_in_had x is bad.\n";
+    }
+  if (parton1_in_had_py != parton1_in_had_py)
+    {
+    parton1_in_had_py_good = 0; bad_angle = true; std::cout << "parton1_in_had y is bad.\n";
+    }
+  if (parton1_in_had_pz != parton1_in_had_pz)
+    {
+    parton1_in_had_pz_good = 0; bad_angle = true; std::cout << "parton1_in_had z is bad.\n";
+    }
   
   TVector3 parton1Whad_frame3vec(parton1_in_had_px, parton1_in_had_py, parton1_in_had_pz); //3-vector of 1st parton in hadronic frame XXX
   TVector3 parton1Whad_frame_unit3vec = parton1Whad_frame3vec.Unit(); //unit 3-vector of 1st parton in hadronic frame XXX
@@ -4896,7 +5472,11 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   parton1_dotted_x = x_m21; // new
   parton1_dotted_y = y_m21;
   parton1_dotted_z = z_m21;
-  
+
+  if (parton1_dotted_x != parton1_dotted_x) {bad_angle = true; std::cout << "parton1 dotted x is bad" << std::endl;}
+  if (parton1_dotted_y != parton1_dotted_y) {bad_angle = true; std::cout << "parton1 dotted y is bad" << std::endl;}
+  if (parton1_dotted_z != parton1_dotted_z) {bad_angle = true; std::cout << "parton1 dotted z is bad" << std::endl;}
+    
   TVector3 M21_Z2frame(y_m21, z_m21, x_m21); //3-vector made of dot products of 1st parton
   costheta2 = M21_Z2frame.CosTheta(); //ANGLE THETA2
 
@@ -4918,22 +5498,30 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   lepton1WWframe_Y = lepton1WWframe.Y();
   lepton1WWframe_Z = lepton1WWframe.Z();
   
-  if (lepton_sumWWframe_X != lepton_sumWWframe_X) lepton_sumWWframe_X = -5000.0;
-  if (lepton_sumWWframe_Y != lepton_sumWWframe_Y) lepton_sumWWframe_Y = -5000.0;
-  if (lepton_sumWWframe_Z != lepton_sumWWframe_Z) lepton_sumWWframe_Z = -5000.0;
+  if (lepton_sumWWframe_X != lepton_sumWWframe_X) {lepton_sumWWframe_X_good = 0; bad_angle = true; std::cout << "lepton sum WWframe x is bad.\n";}
+  if (lepton_sumWWframe_Y != lepton_sumWWframe_Y) {lepton_sumWWframe_Y_good = 0; bad_angle = true; std::cout << "lepton sum WWframe y is bad.\n";}
+  if (lepton_sumWWframe_Z != lepton_sumWWframe_Z) {lepton_sumWWframe_Z_good = 0; bad_angle = true; std::cout << "lepton sum WWframe z is bad.\n";}
 
-  if (lepton1WWframe_X != lepton1WWframe_X) lepton1WWframe_X = -5000.0;
-  if (lepton1WWframe_Y != lepton1WWframe_Y) lepton1WWframe_Y = -5000.0;
-  if (lepton1WWframe_Z != lepton1WWframe_Z) lepton1WWframe_Z = -5000.0;
+  if (lepton1WWframe_X != lepton1WWframe_X) {lepton1WWframe_X_good = 0; bad_angle = true; std::cout << "lepton1 WWframe x is bad.\n";}
+  if (lepton1WWframe_Y != lepton1WWframe_Y) {lepton1WWframe_Y_good = 0; bad_angle = true; std::cout << "lepton1 WWframe y is bad.\n";}
+  if (lepton1WWframe_Z != lepton1WWframe_Z) {lepton1WWframe_Z_good = 0; bad_angle = true; std::cout << "lepton1 WWframe z is bad.\n";}
   
   TVector3 lepton_sumWWframe_3vec(lepton_sumWWframe_X, lepton_sumWWframe_Y, lepton_sumWWframe_Z); //new
   TVector3 lepton1WWframe_3vec(lepton1WWframe_X, lepton1WWframe_Y, lepton1WWframe_Z);  //new
   
   //TVector3 lepton_sumWWframe_unit3vec = lepton_sumWWframe.Vect().Unit(); //unit 3-vector of sum of leptons, boosted to WW frame XXX
   TVector3 lepton_sumWWframe_unit3vec = lepton_sumWWframe_3vec.Unit(); //unit 3-vector of sum of leptons, boosted to WW frame XXX
+
+  lepton_sumWWframe_UX = lepton_sumWWframe_unit3vec.X();
+  lepton_sumWWframe_UY = lepton_sumWWframe_unit3vec.Y();
+  lepton_sumWWframe_UZ = lepton_sumWWframe_unit3vec.Z();
   
   //TVector3 lepton1WWframe_unit3vec = lepton1WWframe.Vect().Unit(); //unit 3-vector of 1st lepton, boosted to WW frame XXX
   TVector3 lepton1WWframe_unit3vec = lepton1WWframe_3vec.Unit(); //unit 3-vector of 1st lepton, boosted to WW frame XXX
+
+  lepton1WWframe_UX = lepton1WWframe_unit3vec.X();
+  lepton1WWframe_UY = lepton1WWframe_unit3vec.Y();
+  lepton1WWframe_UZ = lepton1WWframe_unit3vec.Z();
   
   TVector3 n_unitz_1(lepton_sumWWframe_unit3vec); //unit 3-vector of sum of leptons, boosted to WW frame XXX (yes, it's there twice)
   //// y-axis is defined by neg lepton cross z-axis
@@ -4945,6 +5533,23 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   ////unit1n: z = lepton sum; y = z cross lepton1; x = y cross z
 
   //HERE?
+  //Double_t& xdotx, Double_t& xdoty, Double_t& xdotz, Double_t& ydotx, Double_t& ydoty, Double_t& ydotz, Double_t& zdotx, Double_t& zdoty, Double_t& zdotz,
+  //d_xdotx, d_xdoty, d_xdotz, d_ydotx, d_ydoty, d_ydotz, d_zdotx, d_zdoty, d_zdotz,
+
+  //Double_t& lepton1WWframe_UX, Double_t& lepton1WWframe_UY, Double_t& lepton1WWframe_UZ, Double_t& lepton_sumWWframe_UX, Double_t& lepton_sumWWframe_UY, Double_t& lepton_sumWWframe_UZ,
+  //d_lepton1WWframe_UX, d_lepton1WWframe_UY, d_lepton1WWframe_UZ, d_lepton_sumWWframe_UX, d_lepton_sumWWframe_UY, d_lepton_sumWWframe_UZ, 
+
+  xdotx = n_unitx_1.Dot(x_hat);
+  xdoty = n_unitx_1.Dot(y_hat);
+  xdotz = n_unitx_1.Dot(z_hat);
+
+  ydotx = n_unity_1.Dot(x_hat);
+  ydoty = n_unity_1.Dot(y_hat);
+  ydotz = n_unity_1.Dot(z_hat);
+
+  zdotx = n_unitz_1.Dot(x_hat);
+  zdoty = n_unitz_1.Dot(y_hat);
+  zdotz = n_unitz_1.Dot(z_hat);
 
   TLorentzVector parton1WWframe(parton1); //1st parton, boosted to WW frame XXX
   parton1WWframe.Boost(boostWWframe);
@@ -4953,9 +5558,9 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   parton1WWframe_Y = parton1WWframe.Y();
   parton1WWframe_Z = parton1WWframe.Z();
   
-  if (parton1WWframe_X != parton1WWframe_X) parton1WWframe_X = -5000.0;
-  if (parton1WWframe_Y != parton1WWframe_Y) parton1WWframe_Y = -5000.0;
-  if (parton1WWframe_Z != parton1WWframe_Z) parton1WWframe_Z = -5000.0;
+  if (parton1WWframe_X != parton1WWframe_X) {parton1WWframe_X_good = 0; bad_angle = true; std::cout << "parton1 WWframe x is bad.\n";}
+  if (parton1WWframe_Y != parton1WWframe_Y) {parton1WWframe_Y_good = 0; bad_angle = true; std::cout << "parton1 WWframe y is bad.\n";}
+  if (parton1WWframe_Z != parton1WWframe_Z) {parton1WWframe_Z_good = 0; bad_angle = true; std::cout << "parton1 WWframe y is bad.\n";}
   
   TVector3 parton1WWframe_3vec(parton1WWframe_X, parton1WWframe_Y, parton1WWframe_Z);  //new
   
@@ -4967,10 +5572,10 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   ///////-----------------new way of calculating phi-----------------///////
   
   /// and then calculate phi1
-  TVector3 z_hat(0.0, 0.0, 1.0);
-  TVector3 z_component_n1_units(z_hat.Dot(n_unitx_1), z_hat.Dot(n_unity_1), z_hat.Dot(n_unitz_1)); //n_units dotted into z-axis??? XXX
+  //TVector3 z_hat(0.0, 0.0, 1.0);
+  TVector3 z_component_n1_units(z_hat.Dot(n_unitx_1), z_hat.Dot(n_unity_1), z_hat.Dot(n_unitz_1)); //n_units dotted into z-axis??? XXX PROBLEM
   // negative sign is for arrow convention in paper
-  phi1 = (z_component_n1_units.Phi()); //ANGLE PHI1
+  phi1 = (z_component_n1_units.Phi()); //ANGLE PHI1 PROBLEM
 
   complicated1_px = z_hat.Dot(n_unitx_1); //new
   complicated1_py = z_hat.Dot(n_unity_1);
@@ -4984,9 +5589,9 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   parton_sumWWframe_Y = parton_sumWWframe.Y();
   parton_sumWWframe_Z = parton_sumWWframe.Z();
   
-  if (parton_sumWWframe_X != parton_sumWWframe_X) parton_sumWWframe_X = -5000.0;
-  if (parton_sumWWframe_Y != parton_sumWWframe_Y) parton_sumWWframe_Y = -5000.0;
-  if (parton_sumWWframe_Z != parton_sumWWframe_Z) parton_sumWWframe_Z = -5000.0;
+  if (parton_sumWWframe_X != parton_sumWWframe_X) {parton_sumWWframe_X_good = 0; bad_angle = true; std::cout << "parton sum WWframe x is bad.\n";}
+  if (parton_sumWWframe_Y != parton_sumWWframe_Y) {parton_sumWWframe_Y_good = 0; bad_angle = true; std::cout << "parton sum WWframe y is bad.\n";}
+  if (parton_sumWWframe_Z != parton_sumWWframe_Z) {parton_sumWWframe_Z_good = 0; bad_angle = true; std::cout << "parton sum WWframe z is bad.\n";}
   
   TVector3 parton_sumWWframe_3vec(parton_sumWWframe_X, parton_sumWWframe_Y, parton_sumWWframe_Z); //new
   
@@ -5009,8 +5614,53 @@ void intermediate_steps(TLorentzVector lepton1, TLorentzVector lepton2, TLorentz
   complicated2_py = z_hat.Dot(n_unity_2);
   complicated2_pz = z_hat.Dot(n_unitz_2);
 
-}
+  if (bad_angle == true)
+    {
+      std::cout << "=======================================================================================================\n";
+      std::cout << "fermion_sum is X: " << fermion_sum.X() << " Y: " << fermion_sum.Y() << " Z: " << fermion_sum.Z() << " T: " << fermion_sum.T() << std::endl;
+      std::cout << "lepton_sum is X: " << lepton_sum.X() << " Y: " << lepton_sum.Y() << " Z: " << lepton_sum.Z() << " T: " << lepton_sum.T() << std::endl;
+      std::cout << "parton_sum is X: " << parton_sum.X() << " Y: " << parton_sum.Y() << " Z: " << parton_sum.Z() << " T: " << parton_sum.T() << std::endl;
+      std::cout << "boostWWframe is X: " << boostWWframe.X() << " Y: " << boostWWframe.Y() << " Z: " << boostWWframe.Z() << std::endl;
+      std::cout << "parton_sumWlep_frame is X: " << parton_sumWlep_frame.X() << " Y: " << parton_sumWlep_frame.Y() << " Z: " << parton_sumWlep_frame.Z() << " T: " << parton_sumWlep_frame.T() << std::endl;
+      std::cout << "lepton_sum_WWframe is X: " << lepton_sum_WWframe.X() << " Y: " << lepton_sum_WWframe.Y() << " Z: " << lepton_sum_WWframe.Z() <<  " T: " << lepton_sum_WWframe.T() << std::endl;
+      std::cout << "boostWlep is X: " << boostWlep.X() << " Y: " << boostWlep.Y() << " Z: " << boostWlep.Z() << std::endl;
+      std::cout << "parton_sumWlep_frame is X: " << parton_sumWlep_frame.X() << " Y: " << parton_sumWlep_frame.Y() << " Z: " << parton_sumWlep_frame.Z() << "T: " << parton_sumWlep_frame.T() << std::endl;
+      std::cout << "unitx_1 is X: " << unitx_1.X() << " Y: " << unitx_1.Y() << " Z: " << unitx_1.Z() << std::endl;
+      std::cout << "parton1Wlep_frame is X: " << parton1Wlep_frame.X() << " Y: " << parton1Wlep_frame.Y() << " Z: " << parton1Wlep_frame.Z() << " T: " << parton1Wlep_frame.T() << std::endl;
+      std::cout << "parton2Wlep_frame is X: " << parton2Wlep_frame.X() << " Y: " << parton2Wlep_frame.Y() << " Z: " << parton2Wlep_frame.Z() << " T: " << parton2Wlep_frame.T() << std::endl;
+      std::cout << "unitz_1 is X: " << unitz_1.X() << " Y: " << unitz_1.Y() << " Z: " << unitx_1.Z() << std::endl;
+      std::cout << "unity_1 is X: " << unity_1.X() << " Y: " << unity_1.Y() << " Z: " << unity_1.Z() << std::endl;
+      std::cout << "lepton1Wlep_frame is X: " << lepton1Wlep_frame.X() << " Y: " << lepton1Wlep_frame.Y() << " Z: " << lepton1Wlep_frame.Z() << " T: " << lepton1Wlep_frame.T() << std::endl;
+      std::cout << "lepton1 dotted is X: " << lepton1_dotted_x << " Y: " << lepton1_dotted_y << " Z: " << lepton1_dotted_z << std::endl;
+      std::cout << "boostWhad is X: " << boostWhad.X() << " Y: " << boostWhad.Y() << " Z: " << boostWhad.Z() << std::endl;
+      std::cout << "unitx_2 is X: " << unitx_2.X() << " Y: " << unitx_2.Y() << " Z: " << unitx_2.Z() << std::endl;
+      std::cout << "lepton1Whad_frame is X: " << lepton1Whad_frame.X() << " Y: " << lepton1Whad_frame.Y() << " Z: " << lepton1Whad_frame.Z() << " T: " << lepton1Whad_frame.T() << std::endl;
+      std::cout << "unitz_2 is X: " << unitz_2.X() << " Y: " << unitz_2.Y() << " Z: " << unitx_2.Z() << std::endl;
+      std::cout << "unity_2 is X: " << unity_2.X() << " Y: " << unity_2.Y() << " Z: " << unity_2.Z() << std::endl;
+      std::cout << "parton1Whad_frame is X: " << parton1Whad_frame.X() << " Y: " << parton1Whad_frame.Y() << " Z: " << parton1Whad_frame.Z() << " T: " << parton1Whad_frame.T() << std::endl;
+      std::cout << "parton1 dotted is X: " << parton1_dotted_x << " Y: " << parton1_dotted_y << " Z: " << parton1_dotted_z << std::endl;
+      std::cout << "lepton_sum_WWframe is X: " << lepton_sum_WWframe.X() << " Y: " << lepton_sum_WWframe.Y() << " Z: " << lepton_sum_WWframe.Z() <<  " T: " << lepton_sum_WWframe.T() << std::endl;
+      std::cout << "lepton1WWframe is X: " << lepton1WWframe.X() << " Y: " << lepton1WWframe.Y() << " Z: " << lepton1WWframe.Z() <<  " T: " << lepton1WWframe.T() << std::endl;
+      std::cout << "parton1WWframe is X: " << parton1WWframe.X() << " Y: " << parton1WWframe.Y() << " Z: " << parton1WWframe.Z() <<  " T: " << parton1WWframe.T() << std::endl;
+      std::cout << "parton_sum_WWframe is X: " << parton_sum_WWframe.X() << " Y: " << parton_sum_WWframe.Y() << " Z: " << parton_sum_WWframe.Z() <<  " T: " << parton_sum_WWframe.T() << std::endl;
+      
+      std::cout << "n_unitx_1 is X: " << n_unitx_1.X() << " Y: " << n_unitx_1.Y() << " Z: " << n_unitx_1.Z() << std::endl;
+      std::cout << "n_unitz_1 is X: " << n_unitz_1.X() << " Y: " << n_unitz_1.Y() << " Z: " << n_unitx_1.Z() << std::endl;
+      std::cout << "n_unity_1 is X: " << n_unity_1.X() << " Y: " << n_unity_1.Y() << " Z: " << n_unity_1.Z() << std::endl;
 
+      std::cout << "n_unitx_2 is X: " << n_unitx_2.X() << " Y: " << n_unitx_2.Y() << " Z: " << n_unitx_2.Z() << std::endl;
+      std::cout << "n_unitz_2 is X: " << n_unitz_2.X() << " Y: " << n_unitz_2.Y() << " Z: " << n_unitx_2.Z() << std::endl;
+      std::cout << "n_unity_2 is X: " << n_unity_2.X() << " Y: " << n_unity_2.Y() << " Z: " << n_unity_2.Z() << std::endl;
+      std::cout << "=======================================================================================================\n";
+
+      
+      //std::cout << "something is X: " << something.X() << " Y: " << something.Y() << " Z: " << something.Z() << std::endl;
+      //std::cout << "something is X: " << something.X() << " Y: " << something.Y() << " Z: " << something.Z() << " T: " << something.T() << std::endl;
+    }
+  bad_angle = false;
+
+}
+//*/
 
 
 //define this as a plug-in
